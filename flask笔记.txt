@@ -1,0 +1,27 @@
+JinJia2
+模板语法过滤器：{{ 变量名 | 过滤器 }}
+过滤器：
+length-----长度
+count------计数
+safe--------禁止转义，不把html标签转成字符，比如 <p> 转成  &lt p &gt, 常用与富文本编辑器
+capitalize-----首字母大写
+title------一句话中每个单词的首字母大写
+lower------首字母小写
+upper-----全部大写
+reverse------翻转
+{{ ‘%s’is ‘%d’| format（‘张三’， 18） }}  ------格式化
+{{ xxx | xxx | xxx }}-------链式
+
+列表过滤器：
+{{ list | xxx }}
+first----第一个
+length----长度
+last-----最后一个
+sum----求和
+sort------排序
+
+字典语法：
+{% for k ,v in dicts.items() %}  ----跟python语法差不多: items(), keys(), vales()
+	{{ k }}----{{ v }}
+{% endfor %}
+

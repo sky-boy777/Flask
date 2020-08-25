@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>主页</h1>
+{% if content.name %}  {# 判断 #}
+    <h3>用户：{{ content.name }}----{{ content.get('name') }}</h3>  {# 字典渲染:可以用python的代码get() #}
+{% endif %}
+
+<h3>名字列表：{{ content.names.0 }}</h3>  {# 列表可以用点后面数字的方法取 #}
+
+<ul>
+{% for i in content.names %}   {# 循环 #}
+    {% if i | length > 3 %}    {# 判断长度 #}
+      <li>{{ loop.index }}、{{ i }}</li>  {# loop属性：loop.index0,表示从零开始 #}
+    {% else %}
+        <i>{{ loop.index0 }}、{{ i }}</i>
+    {% endif %}
+{% endfor %}
+</ul>
+<p>共{{ content.names | count }个</p>  {# 过滤器：计数 #}
+</body>
+</html>
