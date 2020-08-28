@@ -1,4 +1,4 @@
-from flask import Flask, Response, make_response, request, redirect, render_template  # 模板引擎
+from flask import Flask, Response, make_response, request, redirect, render_template, escape
 import settings  # 导入自定义的配置文件
 import json
 
@@ -63,19 +63,23 @@ def index5():
     json_str = json.dumps(['1', '2', '3', '4'])  # 列表转换成json字符串
     return json_str  # 返回json
 
+# 根据状态码返回页面
+@app.errorhandler(404)
+def index6(error):
+    return '页面找不到', 404
+    # return render_template('404.html'), 404
 
-# 接收前端参数，get，post方法
-@app.route('/register', methods=['GET', 'POST'])  # 指定请求方法
-def register():
-    if request.method == 'POST':  # 判断请求方法
-        username = request.form.get('username')  # post方法提取参数，表单
-        print(username)
-        return redirect('/')  # 重定向,里面是路径
 
-    # get方法
-    print(request.args.get('key'))  # 问号传参接收参数，get方法
-    return render_template('register.html')
+# 自定义过滤器
+# 第一种，添加
+def aa(value):
+    return value + '你好'  # 要返回结果
+app.add_template_filter(aa, name='add')  # 函数，过滤器名字
 
+# 第二种，装饰器方法
+@app.add_template_filter # add为模板使用的装饰器名字
+def aa(value):
+    return value + '你好'  # 要返回结果
 
 
 

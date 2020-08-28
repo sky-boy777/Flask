@@ -1,5 +1,5 @@
 #                         渲染模板引擎         重定向     请求对象  反向解析重定向
-from flask import Flask, render_template, redirect, request, url_for
+from flask import Flask, render_template, redirect, request, url_for, escape, abort
 import settings  # 导入配置
 
 app = Flask(__name__)
@@ -11,7 +11,7 @@ app.config.from_object(settings)  # 加载配置
 def index():
     name = '张三'
     age = 18
-    names = ['aa', 'bb', 'cc','dddd', 'eeeee']
+    names = ['aa', 'bb', 'cc', 'dddd', 'eeeee']
     print(locals(), type(locals()))  # 键值对形式的字典类型
 
     #                                       字典形式
@@ -35,4 +35,4 @@ def register():
 
 if __name__ == '__main__':
     print(app.url_map)  # 打印路由规则(路径)
-    app.run(port=8000)  # 指定端口
+    app.run(port=7000)  # 指定端口

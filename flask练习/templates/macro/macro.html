@@ -1,0 +1,7 @@
+{# 定义宏 #}
+{% macro form(action, value='注册', method='post') %}
+<form action="{{ action }}" method="{{ method }}">
+    用户名：<input type="text">
+    <input type="submit" value="{{ value }}">
+</form>
+{% endmacro %}

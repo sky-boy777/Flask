@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    {# 加载静态文件 #}
+<!--    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">  {# 静态文件 #}-->
+    <link rel="stylesheet" href="/static/css/index.css">
 </head>
 <body>
 <h1>主页</h1>
@@ -21,6 +24,26 @@
     {% endif %}
 {% endfor %}
 </ul>
-<p>共{{ content.names | count }个</p>  {# 过滤器：计数 #}
+
+<p>共{{ content.names | count }}个</p>  {# 过滤器count：计数 #}
+
+<img src="{{ url_for('static', filename='images/11.jpg') }}" alt="">  {# 静态文件 #}
+
+{% include 'register.html' %}   {# 包含 #}
+
+
+{# 导入宏 #}
+{% import 'macro/macro.html' as func %}
+{{ func.form('', value='提交') }}
+
+{# 声明一个变量然后使用 #}
+{% set username='张三' %}
+{{ username }}
+
+{# 声明局部变量，只能在里面使用 #}
+{% with num=1000 %}
+    {{ num }}
+{% endwith %}
+
 </body>
 </html>

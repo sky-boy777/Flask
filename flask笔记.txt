@@ -1,4 +1,82 @@
-JinJia2
+基础概念
+mtv:
+model  模型
+template  模板
+view  视图
+
+ORM, 映射
+属性---字段
+对象----一条数据
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+flask蓝图*
+跟django的项目目录差不多
+1、在项目目录下新建python包：apps，这里面用来放各种模块，用户模块、商品模块等
+2、apps下的__init__.py文件下
+from flask import Flask
+import settings  # 导入配置
+from apps.user.view import user_bp  # 导入用户模块
+def create_app():
+    # 创建app，并且指定templates、static文件夹位置
+    app = Flask(__name__, template_folder='../templates', static_folder='../static')  # app,一个核心对象
+    app.config.from_object(settings)  # 加载配置
+    # 蓝图
+    app.register_blueprint(user_bp)  # 将蓝图对象注册到app
+    print(app.url_map)
+    return app
+	
+3、项目目录下的app.py
+from apps import create_app
+app = create_app()
+if __name__ == '__main__':
+    app.run(port=8000)
+	
+4、在apps下新建用户模块包user
+view.py视图函数
+model.py模型函数
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+flask项目基本
+from flask import Flask
+import settings  # 导入配置，创建settings.py文件
+
+app = Flask(__name__)
+app.config.from_object(settings)  # 加载配置
+
+加载静态文件，基于static文件夹
+<link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}"> 或 <link rel="stylesheet" href="/static/css/index.css">
+<img src="{{ url_for('static', filename='images/11.jpg') }}" alt="">
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+JinJa2
+模板继承
+{% extends 'base.html' %}
+{% block 名字 %}  
+{% endblock %}
+
+{# 声明一个变量然后使用 #}
+{% set username='张三' %}
+{{ username }}
+
+{# 声明局部变量，只能在里面使用 #}
+{% with num=1000 %}
+    {{ num }}
+{% endwith %}
+
+了解
+包含：include
+{% include 'xxx.html' %}  包含，把整个页面嵌入进来，跟block差不多，路径基于templates文件夹
+
+宏: macro
+{# 定义宏 #}
+{% macro form(action, value='注册', method='post') %}
+<form action="{{ action }}" method="{{ method }}">
+    用户名：<input type="text">
+    <input type="submit" value="{{ value }}">
+</form>
+{% endmacro %}
+
+{# 导入宏 #}
+{% import 'macro/macro.html' as func %}
+{{ func.form('', value='提交') }}
+
 模板语法过滤器：{{ 变量名 | 过滤器 }}
 过滤器：
 length-----长度
@@ -20,8 +98,105 @@ last-----最后一个
 sum----求和
 sort------排序
 
+# 自定义过滤器
+	# 第一种，添加
+	def aa(value):
+		return value + '你好'  # 要返回结果
+	app.add_template_filter(aa, name='add')  # 函数，过滤器名字
+
+	# 第二种，装饰器方法
+	@app.add_template_filter('add')  # add为模板使用的装饰器名字
+	def bb(value):
+		return value + '你好'  # 要返回结果
+
 字典语法：
 {% for k ,v in dicts.items() %}  ----跟python语法差不多: items(), keys(), vales()
 	{{ k }}----{{ v }}
 {% endfor %}
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+flask模型
+pip install flask-script -------------一个让你的命令行支持自定义命令的工具
 
+2、app.py下
+from apps import create_app
+from flask_script import Manager  # 导入  
+app = create_app()
+manager = Manager(app=app)  # 弄个壳
+if __name__ == '__main__':
+    # app.run(port=8000)
+    manager.run()  # 使用它的run方法
+	
+3、启动
+python app.py runserver -p 端口号 -h 主机
+
+
+配置数据库模型
+1、安装：
+pip install pymysql ---------python与数据库之间的桥梁
+pip install flask-sqlalchemy ------ 基于sqlalchemy做了提升，实现ORM映射
+pip install flask-migrate --------发布命令的工具
+
+2、settings配置：
+	#                                                   数据库+驱动       用户 ：密码 @ 主机  ： 端口号 /数据库名
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:root@127.0.0.1：3306/flask'            # 连接数据库
+
+3、创建包ext：
+__init__.py种添加
+	# 创建一个映射对象
+	from flask_sqlalchemy import SQLAlchemy
+	db = SQLAlchemy()   # 稍后必须跟app关联
+	
+4、在apps包的__init__.py添加
+	from apps.ext import db   # 导入db对象，ext下面的__init__
+	def create_app():
+		...
+		db.init_app(app)  # 将db对象与app进行关联
+		...
+		return app  # 返回app对象
+
+5、app.py代码如下
+from apps import create_app  # 创建app
+from flask_script import Manager  # 给app套壳
+from flask_migrate import Migrate, MigrateCommand  # 数据库命令工具,执行迁移一些操作
+from apps.ext import db  # 数据库映射对象
+
+app = create_app()
+manager = Manager(app=app)  # 套一个壳
+
+# 数据库命令工具,迁移什么的
+migrate = Migrate(app=app, db=db)
+manager.add_command('db', MigrateCommand)  # 添加数据库的一些迁移操作到manager壳,跟python数据库迁移操作差不多
+
+if __name__ == '__main__':
+    manager.run()  # 命令行启动：python app.py runserver -p 端口 —h 主机
+	
+创建模型
+1、在models.py下
+# ORM   类-----表
+# 对象----表中的一条记录
+from ext import db  # 跟django差不多
+from datetime import datetime
+
+# 模型
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)  # 主键、自动增长
+    username = db.Column(db.String(30), nullable=False, unique=True)  # 不能为空、唯一
+    password = db.Column(db.String(255), nullable=False)
+    register_time = db.Column(db.DateTime, default=datetime.now())  # 注册时间
+
+    def __str__(self):
+        return self.username
+
+2、在app.py下必须导入创建好的模型
+from apps.user.models import User  # 导入模型
+
+3、迁移
+python app.py db init  ----产生一个文件架migrations，只需执行一次
+
+python app.py db migrate  ----产生版本文件，迁移
+python app.py db upgrade-----在数据库里升级版本，同步
+
+python app.py db downgrade------降级的前一个版本
+
+	
+	
