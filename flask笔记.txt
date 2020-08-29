@@ -197,6 +197,16 @@ python app.py db migrate  ----产生版本文件，迁移
 python app.py db upgrade-----在数据库里升级版本，同步
 
 python app.py db downgrade------降级的前一个版本
-
-	
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+flask数据库的操作
+参考手册：http://www.pythondoc.com/flask-sqlalchemy/index.html
+		user = User()  # 实例化一个用户对象
+        user.username = '张三'
+        user.password = hashlib.sha256(‘123456’.encode('utf-8'))  # 加密，先编码转换才能使用加密
+        # 添加并保存
+        db.session.add(user)
+        db.session.commit()	
+		
+		user = User.queryset.all()    # 查询全部
+		
 	
