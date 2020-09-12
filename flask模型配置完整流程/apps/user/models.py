@@ -1,5 +1,5 @@
-from ext import db
-from datetime import datetime
+from ext import db  # 模型继承自db.Model
+from datetime import datetime 
 
 # 创建模型
 class User(db.Model):

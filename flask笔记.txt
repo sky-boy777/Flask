@@ -21,7 +21,7 @@ def create_app():
     app.config.from_object(settings)  # 加载配置
     # 蓝图
     app.register_blueprint(user_bp)  # 将蓝图对象注册到app
-    print(app.url_map)
+    print(app.url_map)  # 打印全部路由
     return app
 	
 3、项目目录下的app.py
@@ -44,6 +44,14 @@ app.config.from_object(settings)  # 加载配置
 加载静态文件，基于static文件夹
 <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}"> 或 <link rel="stylesheet" href="/static/css/index.css">
 <img src="{{ url_for('static', filename='images/11.jpg') }}" alt="">
+
+前端反向解析
+<form action="{{ url_for('user.search') }}">
+
+前端url_for传参
+<a href="{{ url_for('user.delete', id=user.id) }}">删除</a>
+或
+<a href="{{ url_for('user.delete') }}?id={{ user.id }}">删除</a>
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 JinJa2
 模板继承
@@ -202,11 +210,55 @@ flask数据库的操作
 参考手册：http://www.pythondoc.com/flask-sqlalchemy/index.html
 		user = User()  # 实例化一个用户对象
         user.username = '张三'
-        user.password = hashlib.sha256(‘123456’.encode('utf-8'))  # 加密，先编码转换才能使用加密
+        user.password = hashlib.sha256(‘123456’.encode('utf-8')).hexdigest()  # 加密，先编码转换才能使用加密
         # 添加并保存
-        db.session.add(user)
+        db.session.add(user)   # 删除db.session.delete(me)
         db.session.commit()	
-		
-		user = User.queryset.all()    # 查询全部
+	
+数据库查询   all()返回查询集列表，first()返回一条记录	
+        User.query.all()    # 查询全部
+         User.query.filter().all()  # 查询全部，列表形式
+        # 条件查询
+        User.queryset.filter_by(username=username)  # 返回一个查询集
+        User.queryset.filter_by(username=username).first（）  # 返回查询集第一条
+        User.query.get(1)  # 根据主键查询
+        User.query.filter_by(username='bbb').first()  # 加first()表示取第一个
+        
+filter(最常用)，各种条件查询
+        User.query.filter(User.username == 'aaa').first()  # 最常用,里面是布尔条件,first()表示取第一个
+        User.query.filter(User.username.like('%a%'))  # 模糊查询, %a, a%
+        User.query.filter(User.username.startswith('张')).all()  # 名字以张开头的,all()获取全部，列表形式
+        User.query.filter(User.username.endswith('三')).all()  # 以三结尾
+        User.query.filter(User.username.contains('张')).all()  # 包含
+       
+        User.query.filter(User.username.endswith('g')).first_or_404()  # 查询不存在，则抛出404错误页面 ，get_or_404()
+        User.query.limit(1).all()  # 返回指定的记录数 
+   排序
+        User.query.order_by(User.register_time).all()   # 排序，默认升序，降序在前面加-，字符串不能加-
+        User.query.filter().order_by(-User.register_time).all()   # 降序排序
+        User.query.filter().order_by('register_time').all()   # 字符串不能降序
+
+        # 多条件查询，需要导入,from sqlalchemy import or_, and_, not_    # or, and, not不包含
+        User.query.filter(or_(User.username.like('a%'), User.username.like('b%'))).all()  # 或查询or_
+        User.query.filter(not_(User.register_time > '2020-09-11 12:28:49')).all()   # not取反
+        User.query.filter(User.username=='aa', User.username=='bb')  # and查询也可以这样
+
+        两种大于查询：__gt__(), >
+        User.query.filter(User.register_time.__gt__('2020-09-11 12:28:49')).all()  
+        User.query.filter(User.register_time > '2020-09-11 12:28:49').all()
+
+        User.query.filter(User.username.in_(['aaa','bbb','ccc'])).all()  # in查询
+        User.query.filter(User.age.between(15, 30)).all()  # 范围查询
+
+    偏移，用来分页
+        User.query.filter().offset(2).limit(2).all()  #  跳过前两个，选择两个
+        User.query.offset(2).limit(1).all() 
+
+逻辑删除是在创建数据表的时候添加字段isdelete，就是一种更新的方式
+
+外键
+user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)   # 哪个表的外键
+-------------------------------------------------------------------------------------------------------------------
+        
 		
 	
