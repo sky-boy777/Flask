@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>用户列表</h1>
+<form action="{{ url_for('user.search') }}">
+    <input type="text" name="keyword" placeholder="输入用户名搜索">
+    <input type="submit" value="搜索">
+</form>
+<br>
+<table border="1">
+{% for user in users %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.register_time }}</td>
+        <td><a href="{{ url_for('user.update') }}?id={{ user.id }}">更新</a></td>
+        <td><a href="{{ url_for('user.delete') }}?id={{ user.id }}">删除</a></td>
+    </tr>
+{% endfor %}
+</table>
+</body>
+</html>

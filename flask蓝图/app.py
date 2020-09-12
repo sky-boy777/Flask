@@ -12,8 +12,6 @@ migrate = Migrate(app=app, db=db)
 manager.add_command('db', MigrateCommand)  # 添加数据库的一些迁移操作到manager壳,跟python数据库迁移操作差不多
 
 
-
-
 # 自定义命令行命令(了解)：python app.py aa
 # @manager.command
 # def aa():
