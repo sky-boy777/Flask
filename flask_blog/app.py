@@ -1,8 +1,8 @@
 from apps import create_app  # 创建app
 from flask_script import Manager  # 给app套壳
 from flask_migrate import Migrate, MigrateCommand  # 数据库命令工具,执行迁移一些操作
-from apps import db  # 数据库映射对象
-from apps.blog_app.models import *  # 导入模型
+from exts import db  # 数据库映射对象
+from apps.blog_app.models import *  # 导入数据表模型
 
 app = create_app()
 manager = Manager(app=app)  # 套一个壳

@@ -256,8 +256,56 @@ filter(最常用)，各种条件查询
 
 逻辑删除是在创建数据表的时候添加字段isdelete，就是一种更新的方式
 
-外键
-user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)   # 哪个表的外键
+--------------------------------------------------------------------------------------------------------------------
+一对多(one-to-many)关系（一个用户多篇文章），用来关联查询，关系：在其中的一个表添加
+    外键：文章表
+class Arcitle(db.Model):
+    '''文章表'''
+    # 自定义表名
+    # __tablename = '表名'
+    ......
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)   # 哪个表的外键
+
+class User(db.Model):
+    '''用户表'''
+    ......
+    # 建立关系                1、对应哪个类  2、反向引用：Arcitle.user.username
+    arcitle = db.relationship('Arcitle',     backref='user')  # 不用迁移，不在数据库层面
+
+--------------------------------------------------------------------------------------------------------------------
+多对多(many-to-many)关系
+    定义一个用于关系的辅助表，建议 不 使用模型，而是采用一个实际的表
+
+# 多对多关系（用户跟商品）,一个辅助表
+lass User(db.Model):
+    '''用户表'''
+     ......
+
+class Goods(db.Model):
+    '''商品表'''
+    ......
+    # 关联表                  模型名            反向                   表名:数据库里面
+    users = db.relationship('User', backref='goods', secondary='user__goods')    # 添加多对多关联
+
+class User_Goods(db.Model):
+    '''多对多辅助表'''
+    ......
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # 外键
+    goods_id = db.Column(db.Integer, db.ForeignKey('goods.id'), nullable=False)  # 外键
+--------------------------------------------------------------------------------------------------------------------
+
+
+字段类型
+Integer	                 一个整数
+String (size)	有长度限制的字符串
+Text	                  一些较长的 unicode 文本
+DateTime	                 表示为 Python datetime 对象的 时间和日期
+Float	               存储浮点值
+Boolean	                  存储布尔值
+PickleType	存储为一个持久化的 Python 对象
+LargeBinary	存储一个任意大的二进制数据
+
+注意：主键字段不会自动添加，需要手动（跟django不同）
 -------------------------------------------------------------------------------------------------------------------
         
 		
