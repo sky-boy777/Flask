@@ -1,0 +1,14 @@
+{# flask-bootstrap模板的使用 #}
+{# 参考：https://flask-bootstrap-zh.readthedocs.io/zh/latest/basic-usage.html #}
+
+{% extends "bootstrap/base.html" %}
+{% block title %}标题{% endblock %}
+
+{% block navbar %}  {# 导航栏 #}
+<div class="navbar navbar-fixed-top">
+</div>
+{% endblock %}
+
+{% block content %}
+  <h1>Hello, Bootstrap</h1>
+{% endblock %}

@@ -257,7 +257,7 @@ filter(最常用)，各种条件查询
 逻辑删除是在创建数据表的时候添加字段isdelete，就是一种更新的方式
 
 --------------------------------------------------------------------------------------------------------------------
-一对多(one-to-many)关系（一个用户多篇文章），用来关联查询，关系：在其中的一个表添加
+一对多(one-to-many)关系（一个用户多篇文章），用来关联查询，关系：在其中的一个表添加，外键在多一方添加
     外键：文章表
 class Arcitle(db.Model):
     '''文章表'''
@@ -307,6 +307,149 @@ LargeBinary	存储一个任意大的二进制数据
 
 注意：主键字段不会自动添加，需要手动（跟django不同）
 -------------------------------------------------------------------------------------------------------------------
-        
-		
-	
+使用flask-bootstrap     参考：https://flask-bootstrap-zh.readthedocs.io/zh/latest/
+1、pip install flask-bootstrap
+
+2、在exts下的__init__.py下
+    from flask_bootstrap import Bootstrap
+    bootstrap = Bootstrap()  # bootstrap
+或者直接在apps在apps下的__init__.py下
+    from flask_bootstrap import Bootstrap
+    def create_app():
+   ......
+    Bootstrap(app)  # 初始化bootstrap
+    ......
+    return app
+
+3、在apps下的__init__.py的create_app下
+def create_app():
+   ......
+    bootstrap.init_app(app)  # 初始化bootstrap
+    ......
+    return app
+
+4、base.html
+{# flask-bootstrap模板的使用 #}
+{# 参考：https://flask-bootstrap-zh.readthedocs.io/zh/latest/basic-usage.html #}
+
+{% extends "bootstrap/base.html" %}
+{% block title %}This is an example page{% endblock %}
+
+{% block navbar %}
+<div class="navbar navbar-fixed-top">
+</div>
+{% endblock %}
+
+{% block content %}
+  <h1>Hello, Bootstrap</h1>
+{% endblock %}
+-------------------------------------------------------------------------------------------------------------------
+views.py下
+
+# url_prefix='/blog':路由前导,例如：/blog/blog_detail
+app_bp = Blueprint('app', __name__, url_prefix='/blog')
+----------------------------------------------------------------------------------------------------------------
+发送Ajax请求
+$.get('{{ url_for("user.check_phone") }}', {phone:phone}, function(data){
+            alert(data.msg);
+            }
+--------------------------------------------------------------------------------------------------------------------
+flask密码加密与验证
+导入
+from werkzeug.security import generate_password_hash, check_password_hash  # 密码加密,验证密码
+加密
+user.password = generate_password_hash(password)  # 密码格式：方法$盐值$哈希   盐值是八位
+验证：匹配密码                 数据库里密码跟表单传过来的密码
+if check_password_hash(user.password, password):
+--------------------------------------------------------------------------------------------------------------------
+cookie与session
+
+1、设置cookie
+# 设置cooke,需要实例一个响应对象
+                res = redirect(url_for('app.index'))
+                res.set_cookie('uid', str(user.id), max_age=1800)  # 用户主键作为cookie，1800秒
+                return res
+
+2、获取cookie
+uid = request.cookies.get('uid', None)  # 获取cookie值
+
+3、删除cookie
+ # 删除cookie
+    res = redirect(url_for('app.index'))
+    res.delete_cookie('uid')  
+    return res
+
+实例response对象的几种方式
+redirect（）
+render_template()
+Response()
+make_response()
+jsonify()
+
+session
+1、在settings.py
+# 用来给加密加盐
+SECRET_KEY = 'kdfuiefjk4343424@&&$^@&$@&$&@^$&fkjksjfkdsf'
+
+from flask import session
+
+ # 设置session, 字典形式
+                session['uid'] = user.id
+
+# 获取session
+    uid = session.get('uid')
+
+# 删除session
+    # del session['uid']  # 删除某一个，只删除session键值对，不会删除session的内存空间和cookie
+    session.clear()  # 删除session的内存空间和cookie
+-----------------------------------------------------------------------------------------------------------------------
+手机验证码登录基本流程（练习用的网易短信服务）
+1、申请短信服务，获取发送短信demo
+2、在代码获取手机号发送验证码
+# 手机登录，发送验证码
+@user_bp.route('/send_msg', methods=['GET', 'POST'], endpoint='send_msg')
+def send_msg():
+    '''发送短信验证码'''
+    phone = request.args.get('phone')
+    print(phone)
+    SECRET_ID = "ebf79d9288825ef70ac1e0335f71fe25 "  # 产品密钥ID，产品标识
+    SECRET_KEY = "040c04fa10e06b5a9e83c5e175473e6b"  # 产品私有密钥，服务端生成签名信息使用，请严格保管，避免泄露
+    BUSINESS_ID = "931f3201039240128b129b77370a1286"  # 业务ID，易盾根据产品业务特点分配
+    api = SmsSendAPIDemo(SECRET_ID, SECRET_KEY, BUSINESS_ID)
+    params = {
+        "mobile": phone,  # 手机号码
+        "templateId": "10084",  # 短信模板id
+        "paramType": "json",
+        "params": "json格式字符串"
+        # 国际短信对应的国际编码(非国际短信接入请注释掉该行代码)
+        # "internationalCode": "对应的国家编码"
+    }
+    ret = api.send(params)
+    print(ret)
+    session[phone] = '3333'  # 因为没有申请短信服务，所以用个假的练习
+    return jsonify(code=200, msg='短信发送成功')
+    # if ret is not None:
+    #     if ret["code"] == 200:
+    #         taskId = ret["data"]["taskId"]
+    #         print("taskId = %s" % taskId)
+    #          # 将手机号码作为键，验证码作为值
+    #         return jsonify(code=200, msg='短信发送成功')
+    #     else:
+    #         print("ERROR: ret.code=%s,msg=%s" % (ret['code'], ret['msg']))
+    #         return jsonify(code=400, msg='发送失败')
+3、将手机号作为session键，验证码作为值：session[phone] = '3456'  验证码
+4、 获取，对比验证码
+phone = request.args.get('phone')  # 获取手机号
+            yzm = request.args.get('yzm')  # 获取前端的验证码
+            code = session.get(phone)  # 获取真实验证码
+            # 判断验证码是否正确
+            if code == yzm:
+                user = User.query.filter(phone == phone).first()  # 查询用户
+                if user:  # 如果用户存在
+                    session['uid'] = user.id
+                    return redirect(url_for('app.index'))
+                else:
+                    return render_template('user.phone_login', msg='号码未注册')
+            else:
+                return render_template('user.phone_login', msg='验证码错误')
+-----------------------------------------------------------------------------------------------------------

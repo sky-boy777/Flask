@@ -2,12 +2,17 @@ from flask import Flask
 import settings
 from apps.blog_app.views import app_bp  # 主模块
 from apps.user_app.views import user_bp  # 用户模块
-from exts import db
+from exts import db, bootstrap
+from flask_bootstrap import Bootstrap
 
 def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
     app.config.from_object(settings)
-    db.init_app(app)
+    db.init_app(app)  # 初始化db
+
+    # 初始化bootstrap两种方法
+    bootstrap.init_app(app)
+    # Bootstrap(app)
 
     # 注册蓝图(模块：user_app,blog_app...)
     app.register_blueprint(app_bp)

@@ -7,3 +7,5 @@ ENV = 'development'  # 开发环境，生产环境:production
 SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:mysql@127.0.0.1:3306/flask_blog'  # 连接数据库
 SQLALCHEMY_TRACK_MODIFICATIONS = False  # 不追踪对象，减少内存开销，默认为True
 SQLALCHEMY_ECHO = True  # 记录所有 发到标准输出(stderr)的语句，这对调试很有帮助。
+
+SECRET_KEY = 'kdfuiefjk4343424@&&$^@&$@&$&@^$&fkjksjfkdsf'

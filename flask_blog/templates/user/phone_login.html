@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+    <title>Title</title>
+</head>
+<body>
+<h1>手机号登录</h1>
+<form method="post" action="{{ url_for('user.login') }}?key=2">
+    手机号：<input type="text" name="phone" placeholder="输入手机号" id="phone"><br>
+    验证码：<input type="text" name="yzm"> <br>
+    <input type="submit" value="登录">
+</form>
+<button id="btn">发送验证码</button>
+<script>
+    $('#btn').click(function(){
+        let phone = $('#phone').val();  // let 严格模式
+        if(phone && phone.length==11){
+            $.get("{{ url_for('user.send_msg') }}",{'phone':phone} ,function(data){
+                if(data.code==200){
+                    alert(data.msg);
+                }
+                else{
+                    alert(data.msg);
+                }
+            })
+        }
+    })
+</script>
+</body>
+</html>
