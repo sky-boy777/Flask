@@ -1,14 +1,43 @@
 from flask import Blueprint
 from flask import render_template, request, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash  # 密码加密,验证密码
-from apps.blog_app.models import User
+from apps.blog_app.models import User, Article_type, Article
 from exts import db
 from flask import jsonify
 from flask import session, sessions  # 设置session
 from apps.user_app.sms_send import SmsSendAPIDemo  # 发送短信验证码
+from flask import g  # g对象，本次请求的对象,全局的
+from werkzeug.utils import secure_filename  # 将文件名转换为安全的，符合python的类型
+import settings  # 导入配置
+import os
 
 # url_prefix为路由前导，以下路由全部要加路由前导,例如：/user/register
 user_bp = Blueprint('user', __name__, url_prefix='/user')
+
+# 需要登录才能访问的路径列表
+required_login_path = ['/user/user_center', '/user/publish']
+# 登录后不能访问的页面
+login_not_path = ['/user/login', '/user/register']
+
+# 每个请求前执行的钩子函数，只用于蓝图，用户权限验证
+@user_bp.before_app_request
+def my_before_request():
+    '''用户权限验证'''
+    # 获取已登录的用户id
+    uid = session.get('uid')
+    # 如果请求的路径需要登录才能访问
+    if request.path in required_login_path:
+        if uid:
+            user = User.query.get(uid)
+            g.user = user  # 使用g对象存储用户，这样哪个页面都能用了
+        else:
+            # 未登录，渲染登录页面
+            return render_template('user/login.html')
+    elif request.path in login_not_path:
+        # 已登录，不能访问登录跟注册页面
+        if uid:
+            return redirect(url_for('app.index'))
+
 
 # /user/register
 @user_bp.route('/register', methods=['GET', 'POST'], endpoint='register')
@@ -133,3 +162,58 @@ def user_logout():
     # del session['uid']  # 删除某一个，只删除session键值对，不会删除session的内存空间和cookie
     session.clear()  # 删除session的内存空间和cookie
     return redirect(url_for('app.index'))
+
+
+@user_bp.route('/user_center', methods=['GET', 'POST'], endpoint='user_center')
+def user_center():
+    '''用户中心'''
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        phone = request.form.get('phone')
+
+        # 接收头像图片
+        icon = request.files.get('icon')  # FileStorage对象
+        icon_name = icon.filename  # 获取上传的文件名字，包括后缀名
+        icon_extend = icon_name.rsplit('.')[-1]  # 从右边以点分割，提取文件后缀名
+        if icon_extend in ['jpg', 'png']:
+            # 验证手机号
+            if User.query.filter(User.phone == phone).first() and phone != g.user.phone:
+                return render_template('user/user_center.html', user=g.user, msg='错误，号码已注册')
+
+            # 返回一个安全的文件名，会把斜杠转换为下划线
+            icon_name = secure_filename(icon_name)
+
+            # 生存文件路径,绝对路径，改文件名字使得唯一，然后保存到本地
+            file_path = os.path.join(settings.UPLOAD_ICON_DIR, str(g.user.id) + icon_name)
+            icon.save(file_path)
+
+            user = g.user  # 使用g对象
+            user.username = username
+            user.phone = phone
+            user.password = generate_password_hash(password)
+            # 使用相对路径方式将图片的路径保存在数据库，相对于静态文件路径，模板渲染的路径一样
+            path = 'upload/icon'
+            name = str(user.id) + icon_name
+            path = os.path.join(path, name)  # 名字要跟文件夹里的名字一样，不然找不到
+            user.icon = path.replace('\\', '/')  # 将window系统生成的路径\替换为/, 反斜杠要转义
+
+            # 提交更改
+            db.session.commit()
+            return redirect(url_for('app.index'))
+        else:
+            return render_template('user/user_center.html', user=g.user, msg='文件格式不正确')
+    return render_template('user/user_center.html', user=g.user)
+
+
+@user_bp.route('publish', methods=['POST', 'GET'])
+def publish():
+    '''发表文章'''
+    if request.method == 'POST':
+        title = request.form.get('title')
+        content = request.form.get('content')
+        type_name = request.form.get('type_name')
+        print(title, content, type_name)
+    # 查询文章类型渲染到前端select标签
+    article_type = Article_type.query.all()
+    return render_template('user/publish.html', article_type=article_type)

@@ -453,3 +453,113 @@ phone = request.args.get('phone')  # 获取手机号
             else:
                 return render_template('user.phone_login', msg='验证码错误')
 -----------------------------------------------------------------------------------------------------------
+*****用户权限验证，钩子函数，未登录用户不能访问某些页面
+
+钩子函数： 钩子函数是指在执行函数和目标函数之间挂载的函数，框架开发者给调用方提供一个point-挂载点，至于挂载什么函数由调用方决定
+使用例子（像装饰器一样应用）：user_bp.before_first_request
+
+常用：
+应用到app上
+1、before_first_request       在对应用程序实例的第一个请求之前要运行的函数，只会运行一次
+2、before_request            在每个请求之前要运行的函数，每一次请求都会执行一次
+3、after_request           在每个请求之后要运行的函数，每次请求完成后都会执行。 需要接受一个Response对象作为参数，并返回一个新的Response对象，或者返回接收的Response对象s                                
+4、teardown_request          注册在每一个请求的末尾，不管是否有异常，每次请求的最后都会执行。
+
+应用到蓝图上（因为用这个）
+1、before_app_first_request       
+2、before_app_request          
+3、after_app_request                                               
+4、teardown_app_request 
+
+不常用：
+context_processor  上下文处理器，返回的字典可以在全部的模板中使用
+template_filter('xxxxxx')  增加模板过滤器，可以在模板中使用该函数，后面的参数是名称，在模板中用到
+errorhandler(400)
+发生一些异常时，比如404,500，或者抛出异常(Exception)之类的，就会自动调用该钩子函数
+1.发生请求错误时，框架会自动调用相应的钩子函数，并向钩子函数中传入error参数
+2.如果钩子函数没有定义error参数，就会报错
+3.可以使用abort函数来手动终止请求抛出异常，如果要是发生参数错误，可以abort(404)之类的
+--------------------------------------------------------------------------------------------------------------------
+g对象
+from flask import g  # g对象，本次请求的对象,全局的
+g.user = user
+
+模板也能使用：{{ g.user.username }}
+----------------------------------------------------------------------------------------------------------------------
+表单有文件上传必须加 enctype
+form action="" method="post" enctype="multipart/form-data">  # enctype: 上传文件要用
+
+# post请求接收图片使用files
+icon = request.files.get('icon')
+
+修改图片保存的文件名，保存图片路径在数据库
+ # 接收头像图片
+        icon = request.files.get('icon')  # FileStorage对象
+        icon_name = icon.filename  # 获取上传的文件名字，包括后缀名
+        icon_extend = icon_name.rsplit('.')[-1]  # 从右边以点分割，提取文件后缀名
+        if icon_extend in ['jpg', 'png']:
+            # 返回一个安全的文件名，会把斜杠转换为下划线
+            icon_name = secure_filename(icon_name)
+
+            # 生存文件路径,绝对路径，然后保存在相对应路径
+            file_path = os.path.join(settings.UPLOAD_ICON_DIR, str(g.user.id) + icon_name)
+
+            # 保存文件,文件名为：用户id+上传的文件名，保存到数据库也要相同的名字
+            icon.save(file_path)  
+
+            user = g.user  # 使用g对象
+
+            # 保存用户头像路径到数据库,相对于静态文件路径，模板渲染的路径一样
+            path = 'upload/icon'  
+
+            # 名字要跟文件夹里的名字一样，不然找不到
+            path = os.path.join(path, str(user.id) + icon_name)
+
+            # 将window系统生成的路径\替换为/, 反斜杠要转义
+            user.icon = path.replace('\\', '/')  
+
+            # 提交更改
+            db.session.commit()
+-----------------------------------------------------------------------------------------------------------------------
+注意：python的os.path.join()在window系统下生成的路径是反斜杠'\',浏览器是不认识的，要转换
+path.replace('\\', '/')  # 将window系统生成的路径\替换为/
+--------------------------------------------------------------------------------------------------------------------------
+TinyMCE富文本编辑器下载：https://www.tiny.cloud/get-tiny/self-hosted/
+快速开始：http://tinymce.ax-z.cn/quick-start.php
+1、下载，解压然后放到项目static文件夹下
+
+2、引入并初始化
+<script src="{{ url_for('static', filename='tinymce/js/inymce/tinymce.min.js') }}"></script>
+<script>
+        tinymce.init({  // 键值对形式
+            selector: '#textarea',
+            inline: false,
+            toolbar: true,
+            menubar: true,
+            plugins: 'quickbars emoticons advlist autolink link image lists preview', // 字符串，或plugins : ['advlist','autolink','link'],数组方式
+            toolbar: 'undo redo | styleselect | bold italic | link h2 h3 image',  // 工具栏按钮
+            width: 600,  // 宽高
+            height: 300,
+        });
+    </script>
+
+3、form表单
+<form action="" method="post">
+    <textarea id="textarea" name="content" placeholder="正文"></textarea><br>
+    <input type="submit" value="发布">
+</form>
+------------------------------------------------------------------------------------------------------------
+后端接收前端表单内select标签的值
+
+前端
+<form action="" method="post">
+    <select name="title">
+        <option value="文章标题">文章标题</option>
+    </select>
+    <input type="submit" value="发布">
+
+后端
+title = request.form.get('a')  # a是select的name，获得的值是option的熟悉value的值
+-----------------------------------------------------------------------------------------------
+
+

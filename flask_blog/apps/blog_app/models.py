@@ -2,6 +2,8 @@
 # 对象----表中的一条记录
 from exts import db  # 跟django差不多
 from datetime import datetime
+import os
+import settings
 
 # 数据库模型都在这里创建
 class Article_type(db.Model):
@@ -44,6 +46,8 @@ class User(db.Model):
     username = db.Column(db.String(30), nullable=False)  # 用户名
     password = db.Column(db.String(255), nullable=False)  # 密码
     phone = db.Column(db.String(11), unique=True, nullable=False)  # 手机,唯一
+    # 用户头像，保存文件路径
+    icon = db.Column(db.String(255), default='upload/icon/default_icon.jpg')
     register_time = db.Column(db.DateTime, default=datetime.now())  # 注册时间
     is_delete = db.Column(db.Boolean, default=False)  # 是否逻辑删除，False否，True是
 

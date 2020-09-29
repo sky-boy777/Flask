@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+<!--  tinymce富文本引入  -->
+    <script src="{{ url_for('static', filename='tinymce/tinymce.min.js') }}"></script>
+    <script>
+        tinymce.init({  // 键值对形式
+            selector: '#textarea',
+            inline: false,
+            toolbar: true,
+            menubar: true,
+            plugins: 'quickbars emoticons advlist autolink link image lists preview', // 字符串，或plugins : ['advlist','autolink','link'],数组方式
+            toolbar: 'undo redo | styleselect | bold italic | link h2 h3 image',  // 工具栏按钮
+            width: 600,  // 宽高
+            height: 300,
+        });
+    </script>
+</head>
+<body>
+<h1>发表文章</h1>
+<form action="" method="post">
+    <input type="text" name="title" placeholder="文章标题"><br>
+    <select name="type_name">
+        {% for t in article_type %}
+        <option value="{{ t.type_name }}">{{ t.type_name }}</option>
+        {% endfor %}
+    </select>
+    <textarea id="textarea" name="content" placeholder="正文"></textarea><br>
+    <input type="submit" value="发布">
+</form>
+</body>
+</html>
