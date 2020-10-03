@@ -20,15 +20,17 @@ class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)  # 主键、自动增长
     title = db.Column(db.String(50), nullable=False)  # 文章标题
     content = db.Column(db.Text, nullable=False)  # 文章内容
+
+    # 以下是默认
     create_time = db.Column(db.DateTime, default=datetime.now())  # 发布时间
     click_num = db.Column(db.Integer, default=0)  # 浏览量
     save_num = db.Column(db.Integer, default=0)  # 收藏数
     love_num = db.Column(db.Integer, default=0)  # 喜欢（点赞）数
-
     # 评论数
     comments = db.relationship('Comment', backref='article')  # 一篇文章多个评论
+
     # 文章类型外键
-    type_id = db.Column(db.Integer, db.ForeignKey('article_type.id'), nullable=False)
+    type_id = db.Column(db.Integer, db.ForeignKey('article_type.id'), nullable=False)  # 用法：article.articel_type.type_name
     # 文章作者外键，文章属于哪个用户
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # 文章属于哪个用户，外键
 

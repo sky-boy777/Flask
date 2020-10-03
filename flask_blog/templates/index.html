@@ -7,10 +7,30 @@
 <body>
 <h1>首页</h1>
 {% if user %}
-<p>欢迎：{{ user.username }}---<a href="{{ url_for('user.logout') }}">退出</a>----<a href="{{ url_for('user.user_center') }}">用户中心</a></p>
+<p>欢迎：{{ user.username }}---<a href="{{ url_for('user.logout') }}">退出</a>----<a href="{{ url_for('user.user_center') }}">用户中心</a>----<a href="{{ url_for('user.publish') }}">发表文章</a></p>
 {% else %}
     <a href="{{ url_for('user.login') }}">登录</a>--
     <a href="{{ url_for('user.register') }}">注册</a>
 {% endif %}
+
+<h1>文章</h1>
+{% for article in articles %}
+<h3>{{ article.title }}</h3>
+<p><a href="javascript:void;">{{ article.content | cut_off | safe }}</a></p>
+<p>
+    <i>发布时间：{{ article.create_time }}</i>
+    -----<span>浏览量：{{ article.click_num }}</span>
+    -------<span>作者：{{ article.user.username }}</span>
+    -------<span>收藏：{{ article.save_num }}</span>
+    -------<span>点赞：{{ article.love_num }}</span>
+    -------<span>文章类型：{{ article.article_type.type_name }}</span>
+    <p>
+    {% for comment in article.comments %}
+        <p>:{{ comment.content }}----{{ comment.create_time }}----</p>
+    {% endfor %}
+    </p>
+</p>
+<hr>
+{% endfor %}
 </body>
 </html>

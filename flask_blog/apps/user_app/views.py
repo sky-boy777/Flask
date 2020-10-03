@@ -213,7 +213,20 @@ def publish():
         title = request.form.get('title')
         content = request.form.get('content')
         type_name = request.form.get('type_name')
-        print(title, content, type_name)
+
+        # 生成文章对象
+        article = Article()
+        article.title = title  # 标题
+        article.content = content  # 内容
+        article.user_id = g.user.id  # 文章属于的用户id
+        # 文章属于的类型id
+        article_type = Article_type.query.filter_by(type_name=type_name).first()
+        article.type_id = article_type.id
+
+        # 添加提交
+        db.session.add(article)
+        db.session.commit()
+
     # 查询文章类型渲染到前端select标签
     article_type = Article_type.query.all()
     return render_template('user/publish.html', article_type=article_type)

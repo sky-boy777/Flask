@@ -106,7 +106,7 @@ last-----最后一个
 sum----求和
 sort------排序
 
-# 自定义过滤器
+# 自定义过滤器，用于应用程序
 	# 第一种，添加
 	def aa(value):
 		return value + '你好'  # 要返回结果
@@ -116,6 +116,12 @@ sort------排序
 	@app.add_template_filter('add')  # add为模板使用的装饰器名字
 	def bb(value):
 		return value + '你好'  # 要返回结果
+
+# 自定义过滤器,用于蓝图
+@app_bp.app_template_filter('cut_off')  # cut_off为名称，没有则适用函数名称
+def cut_off(value):
+    # 切片
+    return value[:50] + '......'
 
 字典语法：
 {% for k ,v in dicts.items() %}  ----跟python语法差不多: items(), keys(), vales()
