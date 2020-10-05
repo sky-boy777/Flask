@@ -567,5 +567,76 @@ TinyMCE富文本编辑器下载：https://www.tiny.cloud/get-tiny/self-hosted/
 后端
 title = request.form.get('a')  # a是select的name，获得的值是option的熟悉value的值
 -----------------------------------------------------------------------------------------------
+分页：paginate（）函数，返回分页对象，跟django分页几乎一样
+
+    p = int(request.args.get('page', 1))  # 接收页码，转换为整形
+    # 分页,                                                                                      当前页，  每页几条,        每页最大记录数
+    page = Article.query.order_by(-Article.create_time).paginate(page=p, per_page=2，max_per_page=20)
+
+    page.items  # 当前页的每条记录对象（list）
+    page.page  # 当前页码
+    page.prev_num  # 前一页页码
+    page.next_num  # 后一页页码
+    page.has_next  # 是否有下一页（true， false）
+    page.has_prev  # 是否有上一页
+    page.pages  # 总页数
+    page.total  # 数据库的总的记录数
+
+前端
+{% for article in page.items %}  {# 遍历分页对象 #}
+。。。。。。
+
+{# 分页开始 #}
+{% if page.has_prev %}
+<a href="{{ url_for('app.index') }}?page={{ page.prev_num }}">上一页</a>
+{% endif %}
+
+{% for page_num in range(1, page.pages + 1) %}  {# 使用range函数 #}
+<a href="{{ url_for('app.index') }}?page={{ page_num }}">{{ page_num }}</a>
+{% endfor %}
+
+{% if page.has_next %}
+<a href="{{ url_for('app.index') }}?page={{ page.next_num }}">下一页</a>
+{% endif %}
+
+<span>共{{ page.pages }}页</span>
+{# 分页结束 #}
+-------------------------------------------------------------------------------------------------------------------------------
+Ajax点赞
+
+1、前端
+<a href="javascript:;" id="love_num">点赞：<span>{{ article.love_num }}</span></a>
+
+<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>  <!-- 引入jquery cdn -->
+<script>
+    let tag = 1;  // 一个标识，点赞后变为0
+    $('#love_num').click(function(){
+        let $this = $(this);
+        // 点赞     路径                          参数                    回调函数
+        $.get('{{ url_for('app.love_num') }}', {aid:{{ article.id }}, tag:tag}, function(data){
+            if(data.code==200){
+                $this.children('span').text(data.num);
+                $this.css({'color':'red'});  // 点击后变成红色
+                tag = 0;
+            };
+        });
+    });
+
+2、后端
+@app_bp.route('/love_num')
+def love_num():
+    tag = request.args.get('tag')
+    aid = request.args.get('aid')
+    if tag == '1':
+        article = Article.query.get(aid)
+        article.love_num += 1
+        db.session.commit()
+    else:
+        article = Article.query.get(aid)
+    return jsonify({'code': 200, 'num': article.love_num})
+
+
+
+
 
 
