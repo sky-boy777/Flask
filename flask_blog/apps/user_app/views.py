@@ -1,7 +1,7 @@
 from flask import Blueprint
 from flask import render_template, request, redirect, url_for
 from werkzeug.security import generate_password_hash, check_password_hash  # 密码加密,验证密码
-from apps.blog_app.models import User, Article_type, Article
+from apps.blog_app.models import *
 from exts import db
 from flask import jsonify
 from flask import session, sessions  # 设置session
@@ -10,12 +10,13 @@ from flask import g  # g对象，本次请求的对象,全局的
 from werkzeug.utils import secure_filename  # 将文件名转换为安全的，符合python的类型
 import settings  # 导入配置
 import os
+from utils.util import upload, del_photo  # 上传图片到七牛云
 
 # url_prefix为路由前导，以下路由全部要加路由前导,例如：/user/register
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 # 需要登录才能访问的路径列表
-required_login_path = ['/user/user_center', '/user/publish']
+required_login_path = ['/user/user_center', '/user/publish', '/user/upload_photo', 'user/photo_del']
 # 登录后不能访问的页面
 login_not_path = ['/user/login', '/user/register']
 
@@ -230,3 +231,44 @@ def publish():
     # 查询文章类型渲染到前端select标签
     article_type = Article_type.query.all()
     return render_template('user/publish.html', article_type=article_type)
+
+
+@user_bp.route('/upload_photo', methods=['GET', 'POST'])
+def upload_photo():
+    '''上传图片到七牛云'''
+    # 查询用户图片
+    photos = Photo.query.filter(Photo.user_id == g.user.id).all()
+
+    if request.method == 'POST':
+        photo = request.files.get('photo')
+        ret, info = upload(photo)
+        if info.status_code == 200:
+            # 文件名添加到数据库
+            photo = Photo()
+            photo.photo_name = ret['key']
+            photo.user_id = g.user.id
+            db.session.add(photo)
+            db.session.commit()
+            return 'ok'
+        else:
+            return '失败'
+    return render_template('user/upload_photo.html', photos=photos)
+
+
+@user_bp.route('/photo_del', methods=['GET', 'POST'])
+def photo_del():
+    '''删除图片'''
+    # 获取图片id,图片对象
+    pid = request.args.get('pid')
+    photo = Photo.query.get(pid)
+
+    # 删除七牛云上的图片
+    filename = photo.photo_name
+    info = del_photo(filename)  # 调用删除函数
+    if info.status_code == 200:
+        # 删除本地数据库的图片
+        db.session.delete(photo)
+        db.session.commit()
+        return '删除成功'
+    else:
+        return '失败'

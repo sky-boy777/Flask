@@ -76,6 +76,13 @@ class Comment(db.Model):
     article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
 
 
+class Photo(db.Model):
+    '''七牛云图片'''
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    photo_name = db.Column(db.String(255), nullable=False)
+    create_time = db.Column(db.DateTime, default=datetime.now())  # 上传时间
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 
 

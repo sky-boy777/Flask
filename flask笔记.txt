@@ -634,8 +634,120 @@ def love_num():
     else:
         article = Article.query.get(aid)
     return jsonify({'code': 200, 'num': article.love_num})
+------------------------------------------------------------------------------------------------------------------------
+七牛云存储图片
+1、注册，实名认证，创建存储空间（公开）
+2、pip install qiniu
+3、找到python SDK，，创建一个python包，添加util.py文件，修改如下
+
+from qiniu import Auth, put_file, etag, put_data
+import qiniu.config
+import random
+import datetime
+from werkzeug.utils import secure_filename  # 生成安全的文件名
+
+def upload(filestorage):
+    '''上传图片'''
+    # 需要填写你的 Access Key 和 Secret Key
+    access_key = 'gYE5FmsnJXtAwH2cEhPXQVkQ8yBDlNdxqbrCJBez'
+    secret_key = 'sV6rNj-q1SX4echtu-Gy-QrGxENr2GMDJ4N0Ud0i'
+    # 构建鉴权对象
+    q = Auth(access_key, secret_key)
+    # 要上传的空间,自己创建的存储空间
+    bucket_name = 'flask-b'
+
+    # 上传后保存的文件名
+    filename = filestorage.filename  # 获取文件名（包含后缀名）
+    ran = random.randint(1, 10000)  # 一个随机数
+    now_time = datetime.datetime.now().strftime('%Y%m%d%H%M%S')  # 现在的时间
+    suffix = filename.rsplit('.')[-1]  # 切割，获取文件后缀名
+    # 时间 + 原文件名 + 随机数 + 后缀名
+    key = str(now_time) + filename.rsplit('.')[0] + str(ran) + '.' + suffix
+    key = secure_filename(key)
+
+    # 生成上传 Token，可以指定过期时间等
+    token = q.upload_token(bucket_name, key, 3600)
+    ret, info = put_data(token, key, filestorage.read())  # filestorage.read():文件二进制
+    # return info, key  # key是文件名，用来存储到本地数据库
+    return ret, info
+
+注意：
+put_data()适用于从filestorage对象里面读取数据实现上传
+put_file()适用于指定文件路径上传
+
+上传图片
+        photo = request.files.get('photo')  # 接收前端图片
+        ret, info = upload(photo)  # 调用util
+        if info.status_code == 200:   # 状态码200表示成功
+            # 将文件名添加到数据库
+            photo = Photo()
+            photo.photo_name = ret['key']  # 文件名
+
+            db.session.add(photo)
+            db.session.commit()
+            return '上传成功'
+
+前端使用      域名 + 文件名
+<img src="http://qhpzt6wpn.hn-bkt.clouddn.com/{{ photo.photo_name }}" alt="">
 
 
+删除图片，先删除七牛云上的，再删除本地数据库的
+1、在util.py添加函数如下
+def del_photo(filename):
+    from qiniu import Auth, BucketManager
+
+    # 需要填写你的 Access Key 和 Secret Key
+    access_key = 'gYE5FmsnJXtAwH2cEhPXQVkQ8yBDlNdxqbrCJBez'
+    secret_key = 'sV6rNj-q1SX4echtu-Gy-QrGxENr2GMDJ4N0Ud0i'
+
+    # 初始化Auth状态
+    q = Auth(access_key, secret_key)
+
+    # 初始化BucketManager
+    bucket = BucketManager(q)
+
+    # 你要测试的空间， 并且这个key在你空间中存在
+    bucket_name = 'flask-bl'
+    key = filename
+
+    # 删除bucket_name 中的文件 key
+    ret, info = bucket.delete(bucket_name, key)
+    return info
+
+2、flask后端
+@user_bp.route('/photo_del', methods=['GET', 'POST'])
+def photo_del():
+    '''删除图片'''
+    # 获取图片id,图片对象
+    pid = request.args.get('pid')
+    photo = Photo.query.get(pid)
+
+    # 删除七牛云上的图片
+    filename = photo.photo_name
+    info = del_photo(filename)  # 调用删除函数
+    if info.status_code == 200:
+        # 删除本地数据库的图片
+        db.session.delete(photo)
+        db.session.commit()
+        return '删除成功'
+    else:
+        return '失败'
+
+3、前端
+<h1>展示图片（公开空间域名+图片文件名）</h1>
+{% for photo in photos %}
+<img src="http://qhpzt6wpn.hn-bkt.clouddn.com/{{ photo.photo_name }}" alt="">
+<button class="photo-del" data-tag="{{ photo.id }}">删除</button>
+{% endfor %}
+
+<script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+<script>
+    $('.photo-del').click(function(){
+        let pid = $(this).attr('data-tag');
+        location.href='/user/photo_del?pid='+pid;
+    });
+
+---------------------------------------------------------------------------------------------------------------------------------------------
 
 
 
