@@ -4,13 +4,14 @@ from werkzeug.security import generate_password_hash, check_password_hash  # 密
 from apps.blog_app.models import *
 from exts import db
 from flask import jsonify
-from flask import session, sessions  # 设置session
-from apps.user_app.sms_send import SmsSendAPIDemo  # 发送短信验证码
+from flask import session  # 设置session
+from utils.sms_send import SmsSendAPIDemo  # 发送短信验证码
 from flask import g  # g对象，本次请求的对象,全局的
 from werkzeug.utils import secure_filename  # 将文件名转换为安全的，符合python的类型
 import settings  # 导入配置
 import os
 from utils.util import upload, del_photo  # 上传图片到七牛云
+from utils.sms_send import sms_send  # 发送短信验证码
 
 # url_prefix为路由前导，以下路由全部要加路由前导,例如：/user/register
 user_bp = Blueprint('user', __name__, url_prefix='/user')
@@ -81,6 +82,7 @@ def user_login():
     '''登录'''
     if request.method == 'POST':
         key = request.args.get('key')  # key:1为密码登录，2为短信验证码登录,str类型
+        print(key, '*********************************************')
         if key == '1':  # 密码登录
             username = request.form.get('username')
             password = request.form.get('password')
@@ -98,6 +100,7 @@ def user_login():
                 else:
                     return render_template('user/login.html', msg='用户名或密码错误')
         elif key == '2':  # 短信验证码登录
+            print("aaa***************************")
             phone = request.args.get('phone')  # 获取手机号
             yzm = request.args.get('yzm')  # 获取前端的验证码
             code = session.get(phone)  # 获取真实验证码
@@ -124,32 +127,18 @@ def phone_login():
 def send_msg():
     '''发送短信验证码'''
     phone = request.args.get('phone')
-    print(phone)
-    SECRET_ID = "ebf79d9288825ef70ac1e0335f71fe25 "  # 产品密钥ID，产品标识
-    SECRET_KEY = "040c04fa10e06b5a9e83c5e175473e6b"  # 产品私有密钥，服务端生成签名信息使用，请严格保管，避免泄露
-    BUSINESS_ID = "931f3201039240128b129b77370a1286"  # 业务ID，易盾根据产品业务特点分配
-    api = SmsSendAPIDemo(SECRET_ID, SECRET_KEY, BUSINESS_ID)
-    params = {
-        "mobile": phone,  # 手机号码
-        "templateId": "10084",  # 短信模板id
-        "paramType": "json",
-        "params": "json格式字符串"
-        # 国际短信对应的国际编码(非国际短信接入请注释掉该行代码)
-        # "internationalCode": "对应的国家编码"
-    }
-    ret = api.send(params)
-    print(ret)
+    ret = sms_send(phone)
+
     session[phone] = '3333'  # 因为没有申请短信服务，所以用个假的练习
-    return jsonify(code=200, msg='短信发送成功')
-    # if ret is not None:
-    #     if ret["code"] == 200:
-    #         taskId = ret["data"]["taskId"]
-    #         print("taskId = %s" % taskId)
-    #          # 将手机号码作为键，验证码作为值
-    #         return jsonify(code=200, msg='短信发送成功')
-    #     else:
-    #         print("ERROR: ret.code=%s,msg=%s" % (ret['code'], ret['msg']))
-    #         return jsonify(code=400, msg='发送失败')
+    if ret is not None:
+        if ret["code"] == 200:
+            taskId = ret["data"]["taskId"]
+            print("taskId = %s" % taskId)
+             # 将手机号码作为键，验证码作为值
+            return jsonify(code=200, msg='短信发送成功')
+        else:
+            print("ERROR: ret.code=%s,msg=%s" % (ret['code'], ret['msg']))
+            return jsonify(code=400, msg='发送失败')
 
 @user_bp.route('/logout', endpoint='logout')
 def user_logout():

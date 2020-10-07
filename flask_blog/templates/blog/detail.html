@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>  <!-- jquery -->
     <title>Title</title>
+    <style>
+        .icon{
+            width: 50px;
+            border-radius: 90%;
+            vertical-align:middle;
+        }
+    </style>
 </head>
 <body>
 <h1>{{ article.title }}</h1>
@@ -14,6 +21,24 @@
     <a>收藏：<span id="save_num">{{ article.save_num }}</span></a> &nbsp;
     <a href="javascript:;" id="love_num">点赞：<span>{{ article.love_num }}</span></a>
 </div>
+<br>
+
+
+{# 评论 #}
+<form action="" method="post">
+    <textarea name="content" placeholder="评论一下"></textarea><br>
+    <input type="submit" value="评论">
+    <p>{{ msg }}</p>
+</form>
+<hr>
+
+{% if comments %}
+{% for comment in comments  %}
+    <div><img class="icon" src="{{ url_for('static', filename=comment.user.icon) }}" alt="头像"> {{ comment.user.username }}: {{ comment.content }}</div>
+{% endfor %}
+{% else %}
+    <div>还没有任何评论。。。。。</div>
+{% endif %}
 
 
 <script>

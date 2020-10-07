@@ -5,6 +5,7 @@ from flask import render_template, redirect, url_for, request
 from sqlalchemy import or_  # 多条件查询
 from flask import session
 from flask import jsonify
+from flask import g
 
 
 app_bp = Blueprint('app', __name__)
@@ -58,12 +59,39 @@ def index():
     return render_template('index.html', page=page)
 
 
-@app_bp.route('/detail')
+@app_bp.route('/detail', methods=['GET', 'POST'])
 def detail():
     '''文章详情'''
     aid = request.args.get('id')
+    # 查询对应的文章
     article = Article.query.get(aid)
-    return render_template('blog/detail.html', article=article)
+    # 查询文章对应评论
+    comments = Comment.query.filter(Comment.article_id == aid).all()
+
+    # post请求，添加评论
+    if request.method == 'POST':
+        if session.get('uid'):
+            content = request.form.get('content')
+            if len(content) <= 0:
+                return render_template('blog/detail.html', article=article, comments=comments, msg='评论不能为空')
+            comment = Comment()
+            comment.content = content
+            comment.article_id = int(aid)
+            comment.user_id = int(session.get('uid'))
+            db.session.add(comment)
+            db.session.commit()
+
+            aid = request.args.get('id')
+            # 查询对应的文章
+            article = Article.query.get(aid)
+            # 查询文章对应评论
+            comments = Comment.query.filter(Comment.article_id == aid).all()
+
+            return render_template('blog/detail.html', article=article, comments=comments)
+        else:
+            return redirect(url_for('user.login'))
+    return render_template('blog/detail.html', article=article, comments=comments)
+
 
 @app_bp.route('/love_num')
 def love_num():

@@ -56,6 +56,8 @@ class User(db.Model):
     # 一对多关系：一个用户多篇文章：关联查询
     # 建立文章跟用户的关系       1、对应哪个类  2、反向引用：Arcitle.user.username
     articles = db.relationship('Article', backref='user')  # 不用迁移，不在数据库层面
+    # 跟评论建立关系
+    comments = db.relationship('Comment', backref='user')
 
     # 直接打印User会输出username
     def __str__(self):

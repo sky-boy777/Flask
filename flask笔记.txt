@@ -1,3 +1,6 @@
+css
+图片跟文字对齐：vertical-align:middle;
+----------------------------------------------------------------------------------------------------------------------------------------------------------
 基础概念
 mtv:
 model  模型
@@ -748,7 +751,126 @@ def photo_del():
     });
 
 ---------------------------------------------------------------------------------------------------------------------------------------------
+nginx
+轻量级
+并发能力强
+高度模块化
+反向代理
+负载均衡
+
+nginx -s quit    退出
+              stop   也是退出
+              reload   重新加载
+systemctl  start  nginx  启动
 
 
+上线部署uwsgi + nginx
+1、迁移本地环境包：pip freeze > requirements.txt      pip install -r requirements.txt
+    备份数据库（注意：要在cmd下执行）：mysqldump -u root -p 数据库名 > flask_blog.sql
+    导入数据库：mysql -u root -p flask_blog < flask_blog.sql
+2、在服务器安装python，mysql，nginx，创建虚拟环境
+3、ssh上传项目:scp -r flask_blog byc@47.112.208.199:/home/byc/flask，  安装号项目需要的python包，pip install uwsgi
+
+WSGI一种协议
+uWSGI服务器
+
+pip install uwsgi
+-----------------------------------
+创建uwsgi.ini，输入如下:
+[uwsgi]
+# 使用nginx连接时使用
+socket = 0.0.0.0:8000  # 保证跟nginx.conf 里的端口号一致
+
+# 直接作为服务器使用
+# http=0.0.0.0:8080
+
+# 配置工程目录
+chdir = 项目目录
+
+# 配置项目的wsgi目录，相对于工程目录(部署django时使用)
+# wsgi-file=项目目录/wsgi.py
+
+# 适用于flask项目部署
+wsgi-file = app.py
+
+# router
+callable = app
+
+# 配置进程，线程信息
+# 进程
+processes = 4
+# 线程
+threads = 10
+enable-threads = True
+master = True
+# 进程号
+pidfile = uwsgi.pid
+# 日志
+daemonize = uwsgi.log
+---------------------------------------------------
+uwsgi --ini uwsgi.ini  启动
+uwsgi --stop uwsgi.pid  停止
+
+
+
+nginx配置
+------------------------------------------------
+# 注意改成root用户
+user  root;
+worker_processes  1;
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+events {
+    worker_connections  1024;
+}
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+    access_log  /var/log/nginx/access.log  main;
+    sendfile        on;
+    keepalive_timeout  65;
+# 主要填下面代码
+server{
+     listen 80;
+     server_name www.byc.ink;
+     root /home/byc/flask/flask_blog;
+     location / {
+        include uwsgi_params;
+        uwsgi_pass 127.0.0.1:8000;  # 保证跟uwsgi.ini 里的端口号一致
+    }
+    location /static {
+        alias /home/byc/flask/flask_blog/static/;
+    }
+  }
+}
+--------------------------------------------------------------------------------------------------------
+redis缓存
+1、安装
+pip install redis
+pip install flask-caching
+
+2、在exts下的__init__.py下
+from flask_caching import Cache  # 缓存
+cache = Cache()
+
+3、在apps的__init__.py下
+from exts import cache
+
+# redis缓存配置
+config = {
+    'CACHE_TYPE': 'redis',
+    'CACHE_REDIS_HOST': '127.0.0.1',
+    'CACHE_REDIS_PORT': 6379
+}
+
+def create_app():
+    ......
+    # 初始化缓存文件
+    cache.init_app(app=app)
+    ......
+    return app
 
 
