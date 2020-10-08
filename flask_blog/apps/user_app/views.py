@@ -5,13 +5,16 @@ from apps.blog_app.models import *
 from exts import db
 from flask import jsonify
 from flask import session  # 设置session
-from utils.sms_send import SmsSendAPIDemo  # 发送短信验证码
 from flask import g  # g对象，本次请求的对象,全局的
 from werkzeug.utils import secure_filename  # 将文件名转换为安全的，符合python的类型
 import settings  # 导入配置
 import os
 from utils.util import upload, del_photo  # 上传图片到七牛云
 from utils.sms_send import sms_send  # 发送短信验证码
+from .form import UserRegisterForm  # 表单验证
+from exts import cache  # 缓存
+
+
 
 # url_prefix为路由前导，以下路由全部要加路由前导,例如：/user/register
 user_bp = Blueprint('user', __name__, url_prefix='/user')
@@ -100,20 +103,20 @@ def user_login():
                 else:
                     return render_template('user/login.html', msg='用户名或密码错误')
         elif key == '2':  # 短信验证码登录
-            print("aaa***************************")
-            phone = request.args.get('phone')  # 获取手机号
-            yzm = request.args.get('yzm')  # 获取前端的验证码
-            code = session.get(phone)  # 获取真实验证码
+            phone = request.form.get('phone')  # 获取手机号
+            yzm = request.form.get('yzm', None)  # 获取用户输入的验证码
+            code = cache.get(phone)  # 获取真实验证码
+            print(code, "aaa***************************")
             # 判断验证码是否正确
-            if code == yzm:
-                user = User.query.filter(phone == phone).first()  # 查询用户
+            if yzm is not None and code == yzm:
+                user = User.query.filter(User.phone == phone).first()  # 查询用户
                 if user:  # 如果用户存在
                     session['uid'] = user.id
                     return redirect(url_for('app.index'))
                 else:
-                    return render_template('user.phone_login', msg='号码未注册')
+                    return render_template('user/phone_login.html', msg='号码未注册')
             else:
-                return render_template('user.phone_login', msg='验证码错误')
+                return render_template('user/phone_login.html', msg='验证码错误')
     return render_template('user/login.html')
 
 
@@ -127,18 +130,23 @@ def phone_login():
 def send_msg():
     '''发送短信验证码'''
     phone = request.args.get('phone')
-    ret = sms_send(phone)
+    print(phone, '************************************')
+    ret, code = sms_send(phone)
+    cache.set(phone, code, timeout=180)  # 验证码缓存到redis,（key，value， timeout）
+    # cache.set_many([(key, value), (key, value), ...])  # 缓存多个
+    # cache.get(key)  # 获取, cache.get_many(key, key2, ...)
+    # cache.delete(key)  # 删除, cache.delete_many(key, key2, ...)
+    # cache.clear()  # 清空
 
-    session[phone] = '3333'  # 因为没有申请短信服务，所以用个假的练习
-    if ret is not None:
-        if ret["code"] == 200:
-            taskId = ret["data"]["taskId"]
-            print("taskId = %s" % taskId)
-             # 将手机号码作为键，验证码作为值
-            return jsonify(code=200, msg='短信发送成功')
-        else:
-            print("ERROR: ret.code=%s,msg=%s" % (ret['code'], ret['msg']))
-            return jsonify(code=400, msg='发送失败')
+    return jsonify(code=200, msg='短信发送成功')
+    # if ret is not None:
+    #     if ret["code"] == 200:
+    #         taskId = ret["data"]["taskId"]
+    #         # print("taskId = %s" % taskId)
+    #         return jsonify(code=200, msg='短信发送成功')
+    #     else:
+    #         # print("ERROR: ret.code=%s,msg=%s" % (ret['code'], ret['msg']))
+    #         return jsonify(code=400, msg='发送失败')
 
 @user_bp.route('/logout', endpoint='logout')
 def user_logout():
@@ -261,3 +269,14 @@ def photo_del():
         return '删除成功'
     else:
         return '失败'
+
+
+
+# -------------------------------------------------------------------
+# 测试
+@user_bp.route('/test_register', methods=['GET', 'POST'])
+def test_register():
+    form = UserRegisterForm()
+    if form.validate_on_submit():  # 验证表单
+        return 'ok'
+    return render_template('test/register.html', form=form)

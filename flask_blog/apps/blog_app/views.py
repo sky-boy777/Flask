@@ -1,5 +1,5 @@
 from flask import Blueprint
-from exts import db
+from exts import db, cache  # cache缓存
 from apps.blog_app.models import *  # 导入模型
 from flask import render_template, redirect, url_for, request
 from sqlalchemy import or_  # 多条件查询
@@ -23,6 +23,7 @@ def cut_off(value):
 
 
 @app_bp.route('/', methods=['GET', 'POST'], endpoint='index')
+# @cache.cached(timeout=10)  # 视图缓存
 def index():
     '''主页'''
     # c = Comment()

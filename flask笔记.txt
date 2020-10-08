@@ -859,18 +859,77 @@ cache = Cache()
 3、在apps的__init__.py下
 from exts import cache
 
-# redis缓存配置
-config = {
-    'CACHE_TYPE': 'redis',
-    'CACHE_REDIS_HOST': '127.0.0.1',
-    'CACHE_REDIS_PORT': 6379
-}
-
 def create_app():
     ......
-    # 初始化缓存文件
-    cache.init_app(app=app)
+    # 初始化缓存文件, redis缓存配置，参考：https://pythonhosted.org/Flask-Caching/
+    cache.init_app(app=app， config = {
+        'CACHE_TYPE': 'redis',
+        'CACHE_REDIS_HOST': '127.0.0.1',  # 默认使用0号数据库
+        'CACHE_REDIS_PORT': 6379
+        # 'CACHE_REDIS_URL': 'redis://@localhost:6379/2'  # 无密码，有密码：redis://user:password@localhost:6379/2
+})
     ......
     return app
 
+4、
+    cache.set('code', code, timeout=180)          # 设置缓存,（key，value， timeout（秒））
+    cache.set_many([(key, value), (key, value), ...])        # 缓存多个
+    cache.get(key)          # 获取, cache.get_many(key, key2, ...)
+    cache.delete(key)          # 删除, cache.delete_many(key, key2, ...)
+    cache.clear()         # 清空
+
+    @app_bp.route('/', methods=['GET', 'POST'], endpoint='index')
+    @cache.cached(timeout=10)  # 视图缓存,10秒后过期
+    def index():
+        ......
+---------------------------------------------------------------------------------------------------
+flask-WTF表单验证， 参考：http://www.pythondoc.com/flask-wtf/csrf.html#module-flask_wtf.csrf
+------------------------------
+全局csrf
+from flask_wtf.csrf import CsrfProtect
+csrf = CsrfProtect()
+def create_app():
+    app = Flask(__name__)
+    csrf.init_app(app)
+-----------------------------------
+
+1、pip install flask-WTF
+
+2、创建form.py
+from flask_wtf import FlaskForm  # 继承的父类
+from wtforms import StringField, PasswordField, DateField  # 字段
+from wtforms.validators import DataRequired, Length, ValidationError  # 验证器
+
+# 定义表单验证类
+class UserRegisterForm(FlaskForm):
+    '''用户登录表单验证'''
+    # <input type="text">                           必填                   长度
+    username = StringField('username', validators=[DataRequired(), Length(max=10, message='名字太长了')])
+    # <input type="password">
+    password = PasswordField('password', validators=[DataRequired(), Length(min=6, message='密码太短了')])
+
+    # 单字段验证：validate_字段名
+    def validate_username(self, data):
+        # self.username跟data是同一个对象
+        if data.data[0].isdigit():
+            raise ValidationError('不能以数字开头')
+
+3、在视图使用
+from form import UserRegisterForm  # 表单验证
+
+# 测试
+@user_bp.route('/test_register', methods=['GET', 'POST'])
+def test_register():
+    form = UserRegisterForm()
+    if form.validate_on_submit():  # 验证表单，布尔值
+        return 'ok'
+    return render_template('test/register.html', form=form)
+
+4、前端
+<form method="post" action="{{ url_for('user.test_register') }}">
+    {{ form.csrf_token }}  {# 每个post请求都要csrf， 需要在settings里添加SECRET_KEY #}
+    用户名{{ form.username }}{{ form.username.errors[0] }}<br>
+    密码{{ form.password }}{{ form.password.errors[0] }} <br>
+    <input type="submit" value="注册">
+</form>
 

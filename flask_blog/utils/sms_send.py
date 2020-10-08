@@ -71,7 +71,8 @@ def sms_send(phone):
     BUSINESS_ID = "931f3201039240128b129b77370a1286"  # 业务ID，易盾根据产品业务特点分配
     api = SmsSendAPIDemo(SECRET_ID, SECRET_KEY, BUSINESS_ID)
 
-    code = str(random.randint(1000, 9999))  # 随机生成一个四位数验证码，并转换成字符串
+    # code = str(random.randint(1000, 9999))  # 随机生成一个四位数验证码，并转换成字符串
+    code = '3333'  # 申请短信服务麻烦，现在用假的验证码
     params = {
         "mobile": phone,
         "templateId": "10084",
@@ -81,10 +82,12 @@ def sms_send(phone):
         # "internationalCode": "对应的国家编码"
     }
     ret = api.send(params)
-    return ret
+    return ret, code
     # if ret is not None:
     #     if ret["code"] == 200:
     #         taskId = ret["data"]["taskId"]
     #         print("taskId = %s" % taskId)
     #     else:
     #         print("ERROR: ret.code=%s,msg=%s" % (ret['code'], ret['msg']))
+# phone = 18307858303
+# print(sms_send(phone))
