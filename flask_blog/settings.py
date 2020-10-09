@@ -12,7 +12,7 @@ SQLALCHEMY_ECHO = True  # 记录所有 发到标准输出(stderr)的语句，这
 
 SECRET_KEY = 'kdfuiefjk4343424@&&$^@&$@&$&@^$&fkjksjfkdsf'
 
-# 跟django差不多
+
 # 项目路径
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # 静态文件

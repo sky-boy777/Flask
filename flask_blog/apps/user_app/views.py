@@ -1,5 +1,5 @@
 from flask import Blueprint
-from flask import render_template, request, redirect, url_for
+from flask import render_template, request, redirect, url_for, make_response
 from werkzeug.security import generate_password_hash, check_password_hash  # 密码加密,验证密码
 from apps.blog_app.models import *
 from exts import db
@@ -8,9 +8,10 @@ from flask import session  # 设置session
 from flask import g  # g对象，本次请求的对象,全局的
 from werkzeug.utils import secure_filename  # 将文件名转换为安全的，符合python的类型
 import settings  # 导入配置
-import os
+import os, io
 from utils.util import upload, del_photo  # 上传图片到七牛云
 from utils.sms_send import sms_send  # 发送短信验证码
+from utils.generate_img import yzm  # 验证码
 from .form import UserRegisterForm  # 表单验证
 from exts import cache  # 缓存
 
@@ -273,10 +274,42 @@ def photo_del():
 
 
 # -------------------------------------------------------------------
-# 测试
+# 表单验证测试
 @user_bp.route('/test_register', methods=['GET', 'POST'])
 def test_register():
     form = UserRegisterForm()
     if form.validate_on_submit():  # 验证表单
+        # 接收表单数据
+        password = form.password.data  # flask_wtf的表单接收可以这样
+        phone = request.form.get('phone')
+        icon = form.icon.data
+
+        # 保存图片文件
+        filename = secure_filename(icon.filename)  # 返回一个安全的文件名
+        path = os.path.join(settings.BASE_DIR, 'test\\')  # C:\Users\zhang\Desktop\flask_blog\test
+        icon.save(path + filename)  # 保存文件
+        # print(filename, path)
         return 'ok'
     return render_template('test/register.html', form=form)
+
+
+@user_bp.route('/get_img')
+def get_img():
+    '''返回一个图形验证码'''
+    # 调用生成图片验证码的函数
+    code, yzm_img = yzm()
+    cache.set('code', code, timeout=180)  # 验证码保存到redis
+
+    # 创建一个缓冲区
+    buffer = io.BytesIO()
+
+    # 将图片保存到缓冲区
+    yzm_img.save(buffer, 'jpeg')
+
+    # 获取缓冲区里的二进制图片
+    b_img = buffer.getvalue()
+
+    # 二进制图片交给响应，响应头要改为图片类型
+    res = make_response(b_img)
+    res.headers['Content-Type'] = 'image/jpg'
+    return res

@@ -884,6 +884,7 @@ def create_app():
         ......
 ---------------------------------------------------------------------------------------------------
 flask-WTF表单验证， 参考：http://www.pythondoc.com/flask-wtf/csrf.html#module-flask_wtf.csrf
+图形验证码
 ------------------------------
 全局csrf
 from flask_wtf.csrf import CsrfProtect
@@ -893,43 +894,166 @@ def create_app():
     csrf.init_app(app)
 -----------------------------------
 
-1、pip install flask-WTF
+1、pip install flask-WTF， pip install pillow
 
 2、创建form.py
 from flask_wtf import FlaskForm  # 继承的父类
 from wtforms import StringField, PasswordField, DateField  # 字段
-from wtforms.validators import DataRequired, Length, ValidationError  # 验证器
+from wtforms.validators import DataRequired, Length, ValidationError, EqualTo  # 验证器
+import re
+from flask_wtf.file import FileField, FileRequired, FileAllowed  # 文件上传
+from exts import cache  # 缓存
 
 # 定义表单验证类
 class UserRegisterForm(FlaskForm):
     '''用户登录表单验证'''
     # <input type="text">                           必填                   长度
-    username = StringField('username', validators=[DataRequired(), Length(max=10, message='名字太长了')])
-    # <input type="password">
+    username = StringField(label='用户名', validators=[DataRequired(), Length(max=10, message='名字太长了')])
     password = PasswordField('password', validators=[DataRequired(), Length(min=6, message='密码太短了')])
+    password2 = PasswordField('password', validators=[DataRequired(),
+                              # 判断两个字段是否一致
+                              EqualTo(fieldname='password', message='两次密码不一致')])
+    phone = StringField(label='手机号', validators=[DataRequired(), Length(max=11, min=11, message='11位手机号')])
+    # 文件上传                                                                              内部自动转换成小写
+    icon = FileField(label='头像', validators=[FileRequired(message='未上传'), FileAllowed(['png', 'jpg', 'gif'], message='文件格式不对')])
+    # 验证码
+    yzm = StringField(validators=[DataRequired(message='请输入验证码')])
+
+    def validate_yzm(self, data):
+        '''对比验证码'''
+        code = cache.get('code')
+        input_code = data.data
+        # 转换成小写验证
+        if code != input_code:
+            raise ValidationError('验证码错误')
 
     # 单字段验证：validate_字段名
     def validate_username(self, data):
         # self.username跟data是同一个对象
-        if data.data[0].isdigit():
+        if data.data[0].isdigit():  # 查看第一位是否是数字
             raise ValidationError('不能以数字开头')
 
+    def validate_phone(self, data):
+        '''正则验证手机号'''
+        phone = data.data
+        if not re.search(r'^1[3875]\d{9}$', phone):
+            raise ValidationError('手机号格式不对')
 3、在视图使用
-from form import UserRegisterForm  # 表单验证
-
-# 测试
+# 表单验证测试
 @user_bp.route('/test_register', methods=['GET', 'POST'])
 def test_register():
     form = UserRegisterForm()
-    if form.validate_on_submit():  # 验证表单，布尔值
+    if form.validate_on_submit():  # 验证表单
+        # 接收表单数据
+        password = form.password.data  # flask_wtf的表单接收可以这样
+        phone = request.form.get('phone')
+        icon = form.icon.data
+
+        # 保存图片文件
+        filename = secure_filename(icon.filename)  # 返回一个安全的文件名
+        path = os.path.join(settings.BASE_DIR, 'test\\')  # C:\Users\zhang\Desktop\flask_blog\test
+        icon.save(path + filename)  # 保存文件
+        # print(filename, path)
         return 'ok'
     return render_template('test/register.html', form=form)
 
+
+@user_bp.route('/get_img')
+def get_img():
+    '''返回一个图形验证码'''
+    # 调用生成图片验证码的函数
+    code, yzm_img = yzm()
+    cache.set('code', code, timeout=180)  # 验证码保存到redis
+
+    # 创建一个缓冲区
+    buffer = io.BytesIO()
+
+    # 将图片保存到缓冲区
+    yzm_img.save(buffer, 'jpeg')
+
+    # 获取缓冲区里的二进制图片
+    b_img = buffer.getvalue()
+
+    # 二进制图片交给响应，响应头要改为图片类型
+    res = make_response(b_img)
+    res.headers['Content-Type'] = 'image/jpg'
+    return res
+
 4、前端
-<form method="post" action="{{ url_for('user.test_register') }}">
-    {{ form.csrf_token }}  {# 每个post请求都要csrf， 需要在settings里添加SECRET_KEY #}
-    用户名{{ form.username }}{{ form.username.errors[0] }}<br>
+<form method="post" action="{{ url_for('user.test_register') }}" enctype="multipart/form-data">
+    {{ form.csrf_token }}
+    用户名---{{ form.username.label }}{{ form.username }}{{ form.username.errors[0] }}<br>
     密码{{ form.password }}{{ form.password.errors[0] }} <br>
+    再次输入{{ form.password2 }}{{ form.password2.errors.0 }}<br>
+    {{ form.phone.label }}{{ form.phone }}{{ form.phone.errors.0 }}<br>
+    头像{{ form.icon }}{{ form.icon.errors.0 }}<br>
+    验证码{{ form.yzm }}{{ form.yzm.errors.0 }}<img src="{{ url_for('user.get_img') }}" alt="验证码" id="yzm_img"><br>
     <input type="submit" value="注册">
 </form>
+<script>
+    // 点击切换验证码
+    $('#yzm_img').click(function(){
+        // 后面添加一个随机数，不同的请求才能切换
+        $(this).attr('src', "{{ url_for('user.get_img') }}?key=" + Math.random());
+        // $(this).attr('src', "{{ url_for('user.get_img') }}");
+    });
+</script>
+---------------------------------------------
+各种字段类型，Field的子类
+String  字符串
+Password  密码
+Integer  整形
+Decima  有小数点,可以指定小数点位数
+Float  浮点
+Boolean  布尔
+Radio  复选框
+Select  下拉列表
+Datetime  日期
 
+各种验证
+DataRequired  必填
+EqualTo  两个字段是否一致
+IPAddress  IP地址
+Length  长度
+NumberRange  数字范围
+URL  url路径格式
+Email
+Regexp  正则
+----------------------------------------------------------------------------------------------------------
+绘制图形验证码
+pip install pillow
+
+from PIL import Image, ImageFont, ImageDraw, ImageFilter
+import random
+
+def random_RGB():
+    '''随机生成RGB'''
+    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+def yzm():
+    '''生成图片验证码'''
+    s = 'qwertyuiop1234567890lkjhgfdsazxcvbnm'   # 26个单词跟0-9数字
+    size = (120, 60)  # 图片大小
+    yzm_img = Image.new('RGB', size, color=random_RGB())  # 生成画布，随机生成RGB颜色
+    my_font = ImageFont.truetype('static/fonts/ARIALUNI.TTF', size=50)  # 添加字体文件，字体大小
+    draw = ImageDraw.Draw(yzm_img)  # 创建画图对象
+
+    code = ''  # 初始化验证码
+
+    # 开始绘制
+    for i in range(4):
+        t = random.choice(s)  # 从s里面随机选取一个
+        code += t  # 保存验证码，后面用来跟前端的比较
+        # xy坐标,注意字体间隔                  字体        字体颜色
+        draw.text(xy=(i*30, 0), text=t, font=my_font, fill=random_RGB())
+
+    # 画干扰线
+    for j in range(5):
+        draw.line(xy=((5, random.randint(10, 55)), (115, random.randint(10, 50))), fill=random_RGB())
+    # 添加滤镜
+    yzm_img = yzm_img.filter(ImageFilter.DETAIL)
+    return code, yzm_img
+
+if __name__ == '__main__':
+    code, yzm_img = yzm()
+    yzm_img.show()

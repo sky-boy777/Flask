@@ -2,15 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
     <title>Title</title>
 </head>
 <body>
 <h1>注册</h1>
-<form method="post" action="{{ url_for('user.test_register') }}">
+<form method="post" action="{{ url_for('user.test_register') }}" enctype="multipart/form-data">
     {{ form.csrf_token }}
-    用户名{{ form.username }}{{ form.username.errors[0] }}<br>
+    用户名---{{ form.username.label }}{{ form.username }}{{ form.username.errors[0] }}<br>
     密码{{ form.password }}{{ form.password.errors[0] }} <br>
+    再次输入{{ form.password2 }}{{ form.password2.errors.0 }}<br>
+    {{ form.phone.label }}{{ form.phone }}{{ form.phone.errors.0 }}<br>
+    头像{{ form.icon }}{{ form.icon.errors.0 }}<br>
+    验证码{{ form.yzm }}{{ form.yzm.errors.0 }}<img src="{{ url_for('user.get_img') }}" alt="验证码" id="yzm_img"><br>
     <input type="submit" value="注册">
 </form>
+<script>
+    // 点击切换验证码
+    $('#yzm_img').click(function(){
+        // 后面添加一个随机数，不同的请求才能切换
+        $(this).attr('src', "{{ url_for('user.get_img') }}?key=" + Math.random());
+        // $(this).attr('src', "{{ url_for('user.get_img') }}");
+    });
+</script>
 </body>
 </html>
