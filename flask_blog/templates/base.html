@@ -2,7 +2,7 @@
 {# 参考：https://flask-bootstrap-zh.readthedocs.io/zh/latest/basic-usage.html #}
 
 {% extends "bootstrap/base.html" %}
-{% extends "bootstrap/wtf.html" as wtf %}  {# flask-wtf表单 #}
+{% import "bootstrap/wtf.html" as wtf %}  {# flask-wtf表单 #}
 
 {% block title %}标题{% endblock %}
 

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>测试登录闪现flash</h1>
+<form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><br>
+    <input type="text" name="username"><br>
+    <input type="submit" value="登录">
+</form>
+</body>
+</html>

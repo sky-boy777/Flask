@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>闪现flash消息展示</h1>
+{# with声明一个变量 #}
+{# get_flashed_messages()函数的返回值是一个消息列表,with_categories=true表示启用消息分类,category_filter=['error']过滤 #}
+{% with messages = get_flashed_messages(with_categories=true, category_filter=['error']) %}
+{% if messages %}
+    {% for i in messages %}
+    <p>{{ i.0 }}----{{ i.1 }}</p>
+    {% endfor %}
+{% endif %}
+{% endwith %}
+</body>
+</html>

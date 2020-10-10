@@ -273,7 +273,7 @@ def photo_del():
 
 
 
-# -------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # 表单验证测试
 @user_bp.route('/test_register', methods=['GET', 'POST'])
 def test_register():
@@ -298,7 +298,9 @@ def get_img():
     '''返回一个图形验证码'''
     # 调用生成图片验证码的函数
     code, yzm_img = yzm()
-    cache.set('code', code, timeout=180)  # 验证码保存到redis
+
+    # 验证码保存到redis
+    cache.set('code', code, timeout=180)
 
     # 创建一个缓冲区
     buffer = io.BytesIO()
@@ -313,3 +315,22 @@ def get_img():
     res = make_response(b_img)
     res.headers['Content-Type'] = 'image/jpg'
     return res
+
+
+# --------------------------------------------------------------
+# flash闪现
+from flask import flash
+
+@user_bp.route('/index')
+def index():
+    return render_template('test/index.html')
+
+@user_bp.route('/test_login', methods=['GET', 'POST'])
+def test_login():
+    if request.form.get('username') == 'aa':
+        # 添加闪现，category：消息类型,随便定义
+        flash('info消息', category='info')
+        flash('error消息', category='error')
+        flash('自定义消息', category='my_info')
+        return render_template('test/index.html')
+    return render_template('test/test_login.html')
