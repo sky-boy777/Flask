@@ -8,6 +8,7 @@
 <body>
 <h1>手机号登录</h1>
 <form method="post" action="{{ url_for('user.login') }}?key=2">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     手机号：<input type="text" name="phone" placeholder="输入手机号" id="phone"><br>
     验证码：<input type="text" name="yzm"> <br>
     <input type="submit" value="登录">

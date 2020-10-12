@@ -12,7 +12,6 @@ def create_app():
     app = Flask(__name__, template_folder='../templates', static_folder='../static')
     app.config.from_object(settings)
     db.init_app(app)  # 初始化db
-
     # 初始化csrf，需要配置SECRET_KEY
     csrf.init_app(app=app)
 

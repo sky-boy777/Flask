@@ -7,6 +7,7 @@
 <body>
 <h1>登录</h1><h3><a href="{{ url_for('user.phone_login') }}">手机号验证</a></h3>
 <form method="post" action="{{ url_for('user.login') }}?key=1">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     用户名：<input type="text" name="username"><br>
     密码：<input type="password" name="password"><br>
     <input type="submit" value="登录">

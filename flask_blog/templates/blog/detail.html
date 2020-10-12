@@ -26,6 +26,7 @@
 
 {# 评论 #}
 <form action="" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <textarea name="content" placeholder="评论一下"></textarea><br>
     <input type="submit" value="评论">
     <p>{{ msg }}</p>

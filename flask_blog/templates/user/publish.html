@@ -22,6 +22,7 @@
 <body>
 <h1>发表文章</h1>
 <form action="" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="text" name="title" placeholder="文章标题"><br>
     <select name="type_name">
         {% for t in article_type %}

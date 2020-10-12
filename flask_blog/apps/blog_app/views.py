@@ -26,13 +26,6 @@ def cut_off(value):
 # @cache.cached(timeout=10)  # 视图缓存
 def index():
     '''主页'''
-    # c = Comment()
-    # c.article_id = 2
-    # c.content = '这是一条评论'
-    # c.user_id = 1
-    # db.session.add(c)
-    # db.session.commit()
-
     # articles = Article.query.order_by(-Article.create_time).all()  # 查询出全部的文章,按时间降序
 
     p = int(request.args.get('page', 1))  # 页码要为整形
