@@ -1,0 +1,65 @@
+前后端分离架构：前端：app，小程序什么的。后端：mv（视图，模型）
+------------------------------------------------------------------------------------------------------
+Flask-RESTful
+
+1、pip install flask-restful
+
+2、 在exts的__init__.py下，创建api对象
+from flask_restful import Api  # restful api
+
+# restful api  需要在apps下的__init__初始化
+api = Api()
+
+3、在apps的__init__.py下，初始化api
+from exts import api
+
+api.init_app(app=app)
+
+4、在视图下
+from flask import Blueprint  
+from flask_restful import Resource, fields, marshal_with
+from exts import api
+from apps.blog_app.models import *
+
+# 创建蓝图
+restful_bp = Blueprint('restful', __name__, url_prefix='/api')
+
+# 用户表的字段，需跟数据库字段名一致
+user_fields = {
+    'username': fields.String,
+}
+
+# 类视图
+class RestfulResource(Resource):
+    @marshal_with(user_fields)
+    def get(self):
+        '''查询'''
+        users = User.query.all()
+        return users
+
+    def post(self):
+        '''增加'''
+        return 'post'
+
+    def put(self):
+        '''更改'''
+        return 'put'
+
+    def delete(self):
+        '''删除'''
+        return 'deletd'
+
+# api资源（类视图，路径），必须添加，不然访问不到
+api.add_resource(RestfulResource, '/rest')
+
+5、前端或postman访问，指定不同请求方式返回不同结果
+127.0.0.1：8000/rest
+------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
