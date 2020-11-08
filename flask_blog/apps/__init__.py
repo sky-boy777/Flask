@@ -3,7 +3,8 @@ import settings
 from apps.blog_app.views import app_bp  # 主模块
 from apps.user_app.views import user_bp  # 用户模块
 from apps.restful.views import restful_bp  # restful 蓝图（模块）
-from exts import db, bootstrap, cache, api
+from apps.restful_apis.user_api import api_user_bp  # api蓝图
+from exts import db, bootstrap, cache, api, cors
 from flask_bootstrap import Bootstrap
 from flask_wtf.csrf import CsrfProtect  # 全局的csrf保护
 
@@ -19,6 +20,9 @@ def create_app():
 
     # 初始化restful api
     api.init_app(app=app)
+
+    # 初始化cors解决跨域
+    cors.init_app(app=app, supports_credentials=True)  # 后面是支持证书认证
 
     # 初始化缓存文件
     cache.init_app(app=app, config={
@@ -36,5 +40,6 @@ def create_app():
     app.register_blueprint(app_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(restful_bp)
+    app.register_blueprint(api_user_bp)
 
     return app

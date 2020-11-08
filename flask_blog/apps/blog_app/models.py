@@ -5,8 +5,13 @@ from datetime import datetime
 import os
 import settings
 
+# 父类，简化每个类都要加id步骤
+class BaseModel(db.Model):
+    __abstract__ = True  # 这一句使成为抽象模型，不会在数据库生成表，作为父类使用
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
 # 数据库模型都在这里创建
-class Article_type(db.Model):
+class Article_type(BaseModel):
     '''文章类型'''
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     type_name = db.Column(db.String(30), nullable=False)  # 类型名称

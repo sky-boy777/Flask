@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="http://libs.baidu.com/jquery/2.0.0/jquery.min.js"></script>
+    <title>Title</title>
+</head>
+<body>
+<div id="user_list">
+
+</div>
+</body>
+<script>
+    $(function(){
+        url = 'http://127.0.0.1:8000/users';
+        $.get(url, function(data){
+            console.log(data);
+        })
+    })
+</script>
+</html>

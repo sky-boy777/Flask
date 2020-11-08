@@ -1,5 +1,6 @@
+# flask-restful的练习
 from flask import Blueprint, jsonify
-from flask_restful import Resource, fields, marshal_with, reqparse, inputs
+from flask_restful import Resource, fields, marshal_with, reqparse, inputs, marshal
 from werkzeug.datastructures import FileStorage  # 表单接收图片
 from exts import api
 from apps.blog_app.models import *
@@ -9,16 +10,32 @@ from flask import url_for
 # 创建蓝图
 restful_bp = Blueprint('restful', __name__, url_prefix='/api')
 
-# 自定义fields的value值，必须继承fields.Raw,必须重写format方法
-class isDelete(fields.Raw):
-    def format(self, value):
-        return '删除' if value else '未删除'
+# --------------------------------------
+# 输入：请求解析，就是表单验证
+parser = reqparse.RequestParser(bundle_errors=True)  # bundle_errors=True，会将所有验证不通过的message返回
+#                     表单的name            类型         必填         错误返回的信息    只要form表单提交的数据
+parser.add_argument(name='username', type=str, required=True, help='用户名', location=['form'])
+parser.add_argument(name='password', type=str, required=True, help='密码', location=['form', 'args'])
+parser.add_argument(name='phone', type=inputs.regex(r'^1[8]\d{9}$'), required=True, help='手机号')
+parser.add_argument('hobby', action='append')  # 列表形式：['旅游', '打球']
+parser.add_argument('icon', type=FileStorage, location='files')  # 接收图片
+# ----------------------------------------
+
+# -----------------------------------------
+# 输出：json形式返回数据
+
 
 # 使用Url，产生一个链接，点击进入详情，相当于在user_fields前面加了一层
 user_fields1 = {
     'username': fields.String,
-    'uri': fields.Url(endpoint='single_user', absolute=True),  # endpoint为api的endpoint
+    # absolute:完整的url，例如：http://www.baidu.com
+    'url': fields.Url(endpoint='single_user', absolute=True),  # endpoint为api的endpoint
 }
+
+# 自定义fields的value值，必须继承fields.Raw,必须重写format方法
+class isDelete(fields.Raw):
+    def format(self, value):
+        return '删除' if value else '未删除'
 
 # 用户表的字段，需跟数据库字段名一致,序列化json返回给前端（get），key默认为模型字段名
 user_fields = {
@@ -31,17 +48,15 @@ user_fields = {
     'is_delete': isDelete,  # 使用自定义的fields
 }
 
-# 请求解析，就是表单验证
-parser = reqparse.RequestParser(bundle_errors=True)  # bundle_errors=True，会将所有验证不通过的message返回
-#                     表单的name            类型         必填         错误返回的信息    只要form表单提交的数据
-parser.add_argument(name='username', type=str, required=True, help='用户名', location=['form'])
-parser.add_argument(name='password', type=str, required=True, help='密码', location=['form', 'args'])
-parser.add_argument(name='phone', type=inputs.regex(r'^1[8]\d{9}$'), required=True, help='手机号')
-parser.add_argument('hobby', action='append')  # 列表形式：['旅游', '打球']
-parser.add_argument('icon', type=FileStorage, location='files')  # 接收图片
+# @marshal_with装饰器输出复杂数据，套叠类型
+user_list = {
+    'name': fields.String,
+    'len': fields.Integer,
+    'user_list': fields.List(fields.Nested(user_fields))  # 套叠数据序列化,或fields.Nested(user_fields)
+}
+# ----------------------------------------
 
-
-# 类视图ss
+# 类视图
 # 对多个用户操作
 class UsersResource(Resource):
     @marshal_with(user_fields1)  # 将返回的数据序列化
@@ -74,6 +89,7 @@ class UsersResource(Resource):
         return 'delete'
 
 
+
 # 对单个用户操作，路径传参
 class UserResource(Resource):
     @marshal_with(user_fields)  # 将返回的数据序列化
@@ -85,6 +101,28 @@ class UserResource(Resource):
         print('***************************************endpoint(别名)的使用：', url_for('uuu'))
         return 'ok'
 
+    @marshal_with(user_list)
+    def post(self, id):
+        '''返回全部用户'''
+        user = User.query.get(id)
+
+        users = User.query.all()
+        user_list = [i for i in users]
+
+        # 使用marshal返回套叠数据
+        # data = {
+        #     'name': user.username,
+        #     'len': len(users),
+        #     'user_list': marshal(data=user_list, fields=user_fields),  # 使用marshal序列化全部用户
+        # }
+
+        # 使用@marshal_with装饰器返回套叠数据
+        data = {
+            'name': user.username,
+            'len': len(users),
+            'user_list': user_list,
+        }
+        return data
 
 
 # （类视图，路径），必须添加，不然访问不到
