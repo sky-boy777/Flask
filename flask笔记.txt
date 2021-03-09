@@ -1,6 +1,9 @@
-css
-图片跟文字对齐：vertical-align:middle;
+css图片跟文字对齐：vertical-align:middle;
+-------------------------------------------------------------------------------------------------------------------------
+g对象只能是这次的请求如果重定向之后就会改变
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
+重定向可以用url_for传递参数：url_for('user.login'，name=username)
+-----------------------------------------------------------------------------------------------------------------
 基础概念
 mtv:
 model  模型
@@ -12,7 +15,7 @@ ORM, 映射
 对象----一条数据
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 flask蓝图*
-跟django的项目目录差不多
+（跟django的项目目录差不多）
 1、在项目目录下新建python包：apps，这里面用来放各种模块，用户模块、商品模块等
 2、apps下的__init__.py文件下
 from flask import Flask
@@ -214,7 +217,30 @@ python app.py db migrate  ----产生版本文件，迁移
 python app.py db upgrade-----在数据库里升级版本，同步
 
 python app.py db downgrade------降级的前一个版本
+
+-------------------------------------------------------------------------------------------------------------------------------
+简化模型小技巧：创建一个父类，将模型相同的字段统一创建好，__abstrace__ = True表示作为抽象类，不会在数据库生成表
+
+# 父类
+class BaseModel(db.Model):
+    __abstract__ = True  # 这一句使成为抽象模型，不会在数据库生成表，作为父类使用
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+class Article_type(BaseModel):
+    '''文章表'''
+    type_name = db.Column(db.String(30), nullable=False)  # 类型名称
+
+  
 --------------------------------------------------------------------------------------------------------------------------------------------------------
+查询得到一个对象的方法
+           # 方法一，取下标
+            user = UserModel.query.filter(UserModel.email == email)
+            user = user[0]
+
+            # 方法二，first（）
+            user = UserModel.query.filter(UserModel.email == email).first()
+---------------------------------------------------------------------------------------------------------------------
 flask数据库的操作
 参考手册：http://www.pythondoc.com/flask-sqlalchemy/index.html
 		user = User()  # 实例化一个用户对象
@@ -228,13 +254,13 @@ flask数据库的操作
         User.query.all()    # 查询全部
          User.query.filter().all()  # 查询全部，列表形式
         # 条件查询
-        User.queryset.filter_by(username=username)  # 返回一个查询集
-        User.queryset.filter_by(username=username).first（）  # 返回查询集第一条
+        User.queryset.filter_by(username=username)  # 返回一个查询集，列表，取对象user = user[0]
+        User.queryset.filter_by(username=username).first（）  # 返回查询集第一条，一个对象，没有为None
         User.query.get(1)  # 根据主键查询
         User.query.filter_by(username='bbb').first()  # 加first()表示取第一个
         
 filter(最常用)，各种条件查询
-        User.query.filter(User.username == 'aaa').first()  # 最常用,里面是布尔条件,first()表示取第一个
+        User.query.filter(User.username == 'aaa').first()  # 最常用,里面是布尔条件,first()表示取第一个，一个对象，没有为None
         User.query.filter(User.username.like('%a%'))  # 模糊查询, %a, a%
         User.query.filter(User.username.startswith('张')).all()  # 名字以张开头的,all()获取全部，列表形式
         User.query.filter(User.username.endswith('三')).all()  # 以三结尾
@@ -1094,3 +1120,60 @@ flask：flash闪现，顾名思义：闪出来一下子就没了
 -----------------------------------------------------------------------------------------------------------------------------
 python内置日志模块：import logging 
 -------------------------------------------------------------------------------------------------------------------------------
+flask发送邮件
+1、pip inatall flask-mail
+
+2、settings.py下配置
+MAIL_DEFAULT_SENDER = '账户激活<bycwql@1>'  # 显示发件人
+MAIL_SERVER = 'smtp.163.com'  # smtp服务的邮箱服务器， 如果是 qq 改成 smtp.qq.com
+MAIL_USERNAME = 'bycwql@1'  # 发送邮件的邮箱
+MAIL_PASSWORD = 'JBRH'  # 开启SMTP后的客户端授权码
+MAIL_USE_SSL = True
+MAIL_PORT = 465  # SMTP端口需要SSL
+
+3、在exts的__init__.py
+from flask_mail import Mail  # 邮件
+
+mail = Mail()
+
+4、apps下的__init__.py
+from exts import mail
+
+def create_app():
+    ...
+    mail.init_app(app)  # 初始化发送邮件类
+    ...
+    return app
+
+5、新建send_mail.py
+from flask_mail import Message, Mail
+from apps import mail
+
+def send_mail():
+    '''发送邮件'''
+    msg = Message()
+    msg.subject = '旅游景点自助系统'  # 主题
+    msg.sender = '账户激活<bycwql@163.com>'  # 发件人
+    msg.recipients = ['1251779123@qq.com']  # 收件人
+    msg.html = '<a href="#">垃圾</a>'  # 内容
+    # 发送
+    try:
+        mail.send(msg)
+        return True
+    except:
+        return False
+
+
+if __name__ == '__main__':
+    pass
+
+-----------------------------------------------------------------------------------------------------------------------
+flask生成token
+from itsdangerous import TimedJSONWebSignatureSerializer  # token
+
+# 生成token，24小时后过期，secret_key加密
+serializer = TimedJSONWebSignatureSerializer(secret_key=settings.SECRET_KEY, expires_in=86400)
+
+token = serializer.dumps({'uid': uid}).decode('utf-8')   # 加密
+token_j = serializer.loads(token)  # 解密
+
